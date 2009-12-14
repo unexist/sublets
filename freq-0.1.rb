@@ -6,7 +6,7 @@
 # Description: Show the cpu frequence
 # Version: 0.1
 # Date: Mon May 18 21:00 CET 2009
-# Tags: Default Proc Multicore
+# Tags: Proc Multicore
 #
 
 class Freq < Subtle::Sublet

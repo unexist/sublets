@@ -6,7 +6,7 @@
 # Description: Show the cpu temperature
 # Version: 0.1
 # Date: Mon May 18 21:00 CET 2009
-# Tags: Default Proc
+# Tags: Proc
 #
 
 class Temp < Subtle::Sublet
