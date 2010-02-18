@@ -9,5 +9,5 @@ Sur::Specification.new do |s|
   s.version     = "0.2"
   s.tags        = ["Shell", "Icon" ]
   s.files       = [ "wifi.rb" ]
-  s.icons       = [ "clock.xbm" ]
+  s.icons       = [ "icons/wifi_01.xbm" ]
 end

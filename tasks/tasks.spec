@@ -1,7 +1,7 @@
 # Tasks specification file
 # Created with sur-0.1
 Sur::Specification.new do |s|
-  s.name        = "Clock"
+  s.name        = "Tasks"
   s.authors     = [ "Christoph Kappel" ]
   s.date        = "Tue Dec 1 23:00 CET 2009"
   s.contact     = "unexist@dorfelite.net"
