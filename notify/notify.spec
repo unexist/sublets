@@ -3,10 +3,10 @@
 Sur::Specification.new do |s|
   s.name        = "Notify"
   s.authors     = [ "Christoph Kappel" ]
-  s.date        = "Sat Sep 13 19:00 CET 2008"
+  s.date        = "Thu Feb 18 16:14 CET 2010"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Notify example"
-  s.version     = "0.2"
+  s.version     = "0.3"
   s.tags        = [ "Notify" ]
   s.files       = [ "notify.rb" ]
   s.icons       = [ ]
