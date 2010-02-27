@@ -16,7 +16,7 @@ configure :mpd do |s| # {{{
   # Options
   s.host     = "localhost"
   s.port     = 6600
-  s.debug    = true
+  s.debug    = false
   s.interval = 999
 
   # Connect
