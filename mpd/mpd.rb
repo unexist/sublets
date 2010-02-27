@@ -267,28 +267,30 @@ end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
   if(s.socket.nil?)
-    connect(s.host, s.port) 
+    connect(s.host, s.port)
+    update_status
+    idle
 
     watch(self.socket)
   else
     noidle
     get_ok(1)
-  end
 
-  # Send to socket
-  safe_write(
-    case x
-      when 0..14
-        case s.state
-          when :stop  then "play"
-          when :pause then "pause 0"
-          when :play  then "pause 1"
-        end
-      when 15..28 then "stop"
-      when 29..42 then "previous"
-      when 43..56 then "next"
-    end
-  )
+    # Send to socket
+    safe_write(
+      case x
+        when 0..14
+          case s.state
+            when :stop  then "play"
+            when :pause then "pause 0"
+            when :play  then "pause 1"
+          end
+        when 15..28 then "stop"
+        when 29..42 then "previous"
+        when 43..56 then "next"
+      end
+    )
+  end
 end # }}}
 
 on :watch do |s| # {{{
