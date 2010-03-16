@@ -6,7 +6,7 @@ Sur::Specification.new do |s|
   s.date        = "Mon Mar 01 00:53 CET 2010"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show rx/tx data of given interface"
-  s.version     = "0.0"
+  s.version     = "0.1"
   s.tags        = [ "Icon", "Chart" ]
   s.files       = [ "netchart.rb" ]
   s.icons       = [

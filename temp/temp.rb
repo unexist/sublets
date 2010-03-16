@@ -3,7 +3,7 @@
 configure :temp do |s|
   s.interval = 60
   s.temp     = ""
-  s.icon     = Subtle::Icon.new("temp.xbm")
+  s.icon     = Subtlext::Icon.new("temp.xbm")
 
   begin
     s.path = Dir["/proc/acpi/thermal_zone/*"][0] #< Get temp slot

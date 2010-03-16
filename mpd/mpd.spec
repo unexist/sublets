@@ -6,7 +6,7 @@ Sur::Specification.new do |s|
   s.date        = "Sat Feb 27 03:05 CET 2010"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show the current track and controls of mpd"
-  s.version     = "0.3"
+  s.version     = "0.4"
   s.tags        = [ "Watch" ]
   s.files       = [ "mpd.rb" ]
   s.icons       = [

@@ -5,12 +5,12 @@ require "socket"
 configure :mpd do |s| # {{{
   # Icons
   s.icons = {
-    :play  => Subtle::Icon.new("play.xbm"),
-    :pause => Subtle::Icon.new("pause.xbm"),
-    :stop  => Subtle::Icon.new("stop.xbm"),
-    :prev  => Subtle::Icon.new("prev.xbm"),
-    :next  => Subtle::Icon.new("next.xbm"),
-    :note  => Subtle::Icon.new("note.xbm")
+    :play  => Subtlext::Icon.new("play.xbm"),
+    :pause => Subtlext::Icon.new("pause.xbm"),
+    :stop  => Subtlext::Icon.new("stop.xbm"),
+    :prev  => Subtlext::Icon.new("prev.xbm"),
+    :next  => Subtlext::Icon.new("next.xbm"),
+    :note  => Subtlext::Icon.new("note.xbm")
   }
 
   # Options

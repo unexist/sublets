@@ -4,10 +4,10 @@ configure :battery do |s|
   s.interval   = 60
   s.full       = 0
   s.path       = ""
-  s.icon_ac    = Subtle::Icon.new("ac.xbm")
-  s.icon_full  = Subtle::Icon.new("bat_full_02.xbm")
-  s.icon_low   = Subtle::Icon.new("bat_low_02.xbm")
-  s.icon_empty = Subtle::Icon.new("bat_empty_02.xbm")
+  s.icon_ac    = Subtlext::Icon.new("ac.xbm")
+  s.icon_full  = Subtlext::Icon.new("bat_full_02.xbm")
+  s.icon_low   = Subtlext::Icon.new("bat_low_02.xbm")
+  s.icon_empty = Subtlext::Icon.new("bat_empty_02.xbm")
 
   # Get battery slot and capacity
   begin

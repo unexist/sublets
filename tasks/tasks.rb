@@ -2,8 +2,8 @@
 # Created with sur-0.1
 configure :tasks do |s|
   s.interval = 60
-  s.col_norm = Subtle::Color.new(COLORS[:fg_views])
-  s.col_high = Subtle::Color.new(COLORS[:fg_focus])
+  s.col_norm = Subtlext::Color.new(COLORS[:fg_views])
+  s.col_high = Subtlext::Color.new(COLORS[:fg_focus])
   s.clients  = Subtlext::Subtle.current_view.clients
 end
 

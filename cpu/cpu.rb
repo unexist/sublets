@@ -6,7 +6,7 @@ configure :cpu do |s|
   s.last     = []
   s.delta    = []
   s.sum      = []
-  s.icon     = Subtle::Icon.new("cpu.xbm")
+  s.icon     = Subtlext::Icon.new("cpu.xbm")
 
   # Init and count CPUs
   begin

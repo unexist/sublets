@@ -6,7 +6,7 @@ Sur::Specification.new do |s|
   s.date        = "Sat Sep 13 19:00 CET 2008"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show the clock and date"
-  s.version     = "0.2"
+  s.version     = "0.3"
   s.tags        = [ "Icon" ]
   s.files       = [ "clock.rb" ]
   s.icons       = [ "icons/clock.xbm" ]

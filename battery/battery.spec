@@ -6,7 +6,7 @@ Sur::Specification.new do |s|
   s.date        = "Sat Sep 53 12:00 CET 2008"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show the battery state"
-  s.version     = "0.3"
+  s.version     = "0.4"
   s.tags        = [ "Sys", "Icon" ]
   s.files       = [ "battery.rb" ]
   s.icons       = [ 

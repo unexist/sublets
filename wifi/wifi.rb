@@ -8,7 +8,7 @@ IW_ESSID_MAX_SIZE = 32
 
 configure :wifi do |s|
   s.interval = 240
-  s.icon     = Subtle::Icon.new("wifi_01.xbm")
+  s.icon     = Subtlext::Icon.new("wifi_01.xbm")
   s.device   = "wlan0"
 end
 

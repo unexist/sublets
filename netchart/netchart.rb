@@ -1,6 +1,6 @@
 # Netchart sublet file
 # Created with sur-0.1.129
-class Chart < Subtle::Icon # {{{
+class Chart < Subtlext::Icon # {{{
   # Data store
   attr_accessor :data
 
@@ -63,14 +63,14 @@ configure :net do |s| # {{{
   # Init rx
   s.rx = {
     :gauge => Chart.new(30, 10),
-    :icon  => Subtle::Icon.new("net_down_03.xbm"),
+    :icon  => Subtlext::Icon.new("net_down_03.xbm"),
     :data  => 0
   }
 
   # Init tx
   s.tx = {
     :gauge => Chart.new(30, 10),
-    :icon  => Subtle::Icon.new("net_up_03.xbm"),
+    :icon  => Subtlext::Icon.new("net_up_03.xbm"),
     :data  => 0
   }
 end # }}}
