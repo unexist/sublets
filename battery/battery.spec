@@ -3,10 +3,10 @@
 Sur::Specification.new do |s|
   s.name        = "Battery"
   s.authors     = [ "Christoph Kappel" ]
-  s.date        = "Sat Sep 53 12:00 CET 2008"
+  s.date        = "Wed Mar 24 21:42 CET 2020"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show the battery state"
-  s.version     = "0.4"
+  s.version     = "0.5"
   s.tags        = [ "Sys", "Icon" ]
   s.files       = [ "battery.rb" ]
   s.icons       = [ 
