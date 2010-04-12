@@ -6,13 +6,12 @@ class Chart < Subtlext::Icon # {{{
 
   ## initialize {{{
   # Initialize chart
-  # @param [Fixnum, #read]  width   Chart width
-  # @param [Fixnum, #read]  height  Chart height
+  # @param [Fixnum, #read]  width   Icon width
+  # @param [Fixnum, #read]  height  Icon height
   ##
 
   def initialize(width, height)
-    super(width, height)
-
+    super
     @data = []
   end # }}}
 
