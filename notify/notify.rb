@@ -657,12 +657,16 @@ end # }}}
 on :mouse_over do |s| # {{{
   # Show and print messages
   if(0 < s.messages.size)
-    geo = s.geometry
-    s.win.geometry = [ geo.x, geo.y + geo.height + 2, 100, s.messages.size * 15 + 5 ]
+    geo    = s.geometry
+    width  = 1
 
+    # Write each message and calculate window width
     s.messages.each_index do |i|
-      s.win.write(2, 15 * (i + 1), s.messages[i])
+      size  = s.win.write(2, 15 * (i + 1), s.messages[i][0..50])
+      width = size if(size > width)
     end
+
+    s.win.geometry = [ geo.x, geo.y + geo.height + 2, width, s.messages.size * 15 + 5 ]
 
     s.win.show
   end
