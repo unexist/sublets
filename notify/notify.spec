@@ -16,14 +16,14 @@ again and all messages are discarded.
 
 (Max. length of a message is 50 characters)
 NOTES
-  s.version          = "0.4"
+  s.version          = "0.41"
   s.tags             = [ "FFI", "DBus", "Libnotify", "Icon", "Window" ]
   s.files            = [ "notify.rb" ]
   s.icons            = [ "icons/info.xbm" ]
 
   # Version requirements
   s.subtlext_version = "0.9.2127"
-  s.sur_version      = "0.2.168"
+  s.sur_version      = "0.2.170"
 
   # Gem requirements
   s.add_dependency("ffi", ">=0.5.4")

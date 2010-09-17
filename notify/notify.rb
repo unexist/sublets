@@ -625,7 +625,7 @@ configure :notify do |s| # {{{
   }
 
   # Icon
-  s.icon = Subtlext::Icon.new("/usr/share/icons/sm4tik/info_01.xbm")
+  s.icon = Subtlext::Icon.new("info.xbm")
 
   # Window
   s.win = Subtlext::Window.new(:x => 0, :y => 0, :width => 1, :height => 1) do |w|
@@ -634,6 +634,7 @@ configure :notify do |s| # {{{
     w.background  = s.colors[:panel]
     w.border_size = 0
   end
+
 
   # Watch socket
   s.watch(s.dbus.fd)
@@ -657,16 +658,35 @@ end # }}}
 on :mouse_over do |s| # {{{
   # Show and print messages
   if(0 < s.messages.size)
-    geo    = s.geometry
+    x      = 0
+    y      = 0
     width  = 1
+    height = 5
 
     # Write each message and calculate window width
     s.messages.each_index do |i|
-      size  = s.win.write(2, 15 * (i + 1), s.messages[i][0..50])
-      width = size if(size > width)
+      size    = s.win.write(2, 15 * (i + 1), s.messages[i][0..50])
+      width   = size if(size > width) #< Get biggest
+      height += 15
     end
 
-    s.win.geometry = [ geo.x, geo.y + geo.height + 2, width, s.messages.size * 15 + 5 ]
+    # Orientation
+    screen_geom = Subtlext::Screen[0].geometry
+    sublet_geom = s.geometry
+
+    if(sublet_geom.x + width > screen_geom.x + screen_geom.width)
+      x = screen_geom.x + screen_geom.width - width
+    else
+      x = sublet_geom.x
+    end
+
+    if(sublet_geom.y + height > screen_geom.y + screen_geom.height)
+      y = screen_geom.y + screen_geom.height - height
+    else
+      y = sublet_geom.y + sublet_geom.height + 1
+    end
+
+    s.win.geometry = [ x, y, width, height ]
 
     s.win.show
   end
