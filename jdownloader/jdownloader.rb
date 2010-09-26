@@ -20,28 +20,32 @@ configure :jdownloader do |s| # {{{
     :down  => Subtlext::Icon.new("net_down_01.xbm"),
     :disk  => Subtlext::Icon.new("diskette.xbm")
   }
+
+  # Init http
+   s.http = Net::HTTP.new(self.host, self.port)
 end # }}}
 
 helper do |s| # {{{
   def request(string) # {{{
-    http = Net::HTTP.new(self.host, self.port)
-    req  = Net::HTTP::Get.new(string)
+    req = Net::HTTP::Get.new(string)
 
     req.initialize_http_header({"User-Agent" => "jdownloader sublet"})
 
-    http.request(req).body
+    self.http.request(req).body
   end # }}}
 
   def status # {{{
     speed      = 0
-    count      = 0
+    all        = 0
+    finished   = 0
     self.state = :stop
 
     begin
       # Fetch data
-      status = request("/get/downloadstatus")
-      speed  = request("/get/speed").to_i
-      count  = request("/get/downloads/currentcount").to_i
+      status   = request("/get/downloadstatus")
+      speed    = request("/get/speed").to_i
+      all      = request("/get/downloads/allcount").to_i
+      finished = request("/get/downloads/finishedcount").to_i
 
       # Set state
       self.state = case status
@@ -53,12 +57,13 @@ helper do |s| # {{{
     end
 
     # Set state data
-    self.data = "%s %s%dkb/s %s%d" % [
+    self.data = "%s %s%dkb/s %s%d/%d" % [
       self.icons[(:start == self.state ? :stop : :start)], #< Reverse logic
       self.icons[:down],
       speed,
       self.icons[:disk],
-      count
+      finished,
+      all
     ]
   end # }}}
 end # }}}
