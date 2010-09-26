@@ -22,7 +22,7 @@ Following layouts are available in given order:
   top        = Tile top, master bottom
   bottom     = Tile bottom, master top
 NOTES
-  s.version     = "0.1"
+  s.version     = "0.11"
   s.tags        = [ "Layout", "Tiling", "Testing" ]
   s.files       = [ "layout.rb" ]
   s.icons       = [

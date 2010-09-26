@@ -38,7 +38,9 @@ helper do |s| # {{{
           # Update clients
           clients.each do |c|
             c.resize   = false
-            c.geometry = [ g.x, g.y, g.width - 2 * border, g.height - 2 * border ]
+            c.geometry = [
+              g.x, g.y, g.width - 2 * border, g.height - 2 * border
+            ]
 
             # Steps
             case self.mode[self.current]
@@ -56,11 +58,14 @@ helper do |s| # {{{
           end
 
           last.resize   = false
-          last.geometry = [ g.x, g.y, g.width - 2 * border, g.height - 2 * border ]
+          last.geometry = [
+            g.x, g.y, g.width - 2 * border, g.height - 2 * border
+          ]
           # }}}
         when :left, :right, :top, :bottom # {{{
           g     = Subtlext::Geometry.new(geometry)
           first = clients.shift
+          size  = clients.size.zero? ? 1 : clients.size
 
           case self.mode[self.current]
             when :left
@@ -83,33 +88,38 @@ helper do |s| # {{{
 
           # Set first client
           first.resize   = false
-          first.geometry = [ g.x, g.y, g.width - 2 * border, g.height - 2 * border ]
+          first.geometry = [
+            g.x, g.y, g.width - 2 * border, g.height - 2 * border
+          ]
 
           case self.mode[self.current]
             when :left
               g.x      = geometry.x
-              g.height = geometry.height / clients.size
-              fix      = geometry.height - clients.size * g.height #< Fix rounding
+              g.height = geometry.height / size
+              fix      = geometry.height - size * g.height #< Fix rounding
             when :right
               g.x      = geometry.x + g.width
-              g.height = geometry.height / clients.size
-              fix      = geometry.height - clients.size * g.height #< Fix rounding
+              g.height = geometry.height / size
+              fix      = geometry.height - size * g.height #< Fix rounding
             when :top
               g.y     = geometry.y
-              g.width = geometry.width / clients.size
-              fix     = geometry.width - clients.size * g.width #< Fix rounding
+              g.width = geometry.width / size
+              fix     = geometry.width - size * g.width #< Fix rounding
             when :bottom
               g.y     = geometry.y + g.height
-              g.width = geometry.width / clients.size
-              fix     = geometry.width - clients.size * g.width #< Fix rounding
+              g.width = geometry.width / size
+              fix     = geometry.width - size * g.width #< Fix rounding
           end
 
           # Update clients
           clients.each do |c|
             c.resize   = false
-            c.geometry = [ g.x, g.y, g.width - 2 * border, g.height - 2 * border ]
+            c.geometry = [
+              g.x, g.y, g.width - 2 * border, g.height - 2 * border
+            ]
 
-            if(:left == self.mode[self.current] or :right == self.mode[self.current])
+            if(:left == self.mode[self.current] or
+                :right == self.mode[self.current])
               g.y += g.height
             else
               g.x += g.width
