@@ -6,8 +6,13 @@ Sur::Specification.new do |s|
   s.date        = "Sat Sep 13 19:00 CET 2008"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Show the clock and date"
-  s.version     = "0.3"
-  s.tags        = [ "Icon" ]
+  s.notes       = <<NOTES
+This sublet is just a simple clock.
+
+Configurable settings: interval (Fixnum), format_string (String)
+NOTES
+  s.version     = "0.32"
+  s.tags        = [ "Icon", "Config" ]
   s.files       = [ "clock.rb" ]
   s.icons       = [ "icons/clock.xbm" ]
 end
