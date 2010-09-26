@@ -23,7 +23,7 @@ on :run do |s|
 
     s.temp = file.match(/temperature:\s+(\d+)/).captures.first
 
-    s.data = s.icon + s.temp.to_s + "C "
+    s.data = s.icon + s.temp.to_s + "C"
   rescue => err # Sanitize to prevent unloading
     s.data = "subtle"
     p err

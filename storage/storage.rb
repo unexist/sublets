@@ -1,4 +1,4 @@
-# Storage sublet file                                                                                          
+# Storage sublet file
 # Created with sur-0.1 
 configure :storage do |s|
   s.interval = 120
