@@ -12,18 +12,18 @@ class Mixer
   IOC_READ  = 2
 
   # Values for Linux
-  IOC_NRBITS   = 8                                                                                                                        
-  IOC_TYPEBITS = 8    
+  IOC_NRBITS   = 8
+  IOC_TYPEBITS = 8
   IOC_SIZEBITS = 14
 
-  IOC_NRSHIFT   = 0                                                                                                                      
-  IOC_TYPESHIFT = (IOC_NRSHIFT + IOC_NRBITS)                                                                                           
-  IOC_SIZESHIFT = (IOC_TYPESHIFT + IOC_TYPEBITS)                                                                                       
+  IOC_NRSHIFT   = 0
+  IOC_TYPESHIFT = (IOC_NRSHIFT + IOC_NRBITS)
+  IOC_SIZESHIFT = (IOC_TYPESHIFT + IOC_TYPEBITS)
   IOC_DIRSHIFT  = (IOC_SIZESHIFT + IOC_SIZEBITS)
 
   # Volume icon
   attr_reader :icon
-  
+
   # Mixer state
   attr_reader :state
 
@@ -55,7 +55,7 @@ class Mixer
     vol = [ 0, 0 ].pack("cc")
 
     @mixer.ioctl(mixer_read(@channel), vol)
-    
+
     @volume = vol.unpack("cc")
 
     update
@@ -169,7 +169,7 @@ class Mixer
   ##
 
   def mixer_read(dev)
-    ioc(IOC_READ, "M".ord, dev) 
+    ioc(IOC_READ, "M".ord, dev)
   end # }}}
 
   ## mixer_write {{{
@@ -179,7 +179,7 @@ class Mixer
   ##
 
   def mixer_write(dev)
-    ioc(IOC_READ|IOC_WRITE, "M".ord, dev) 
+    ioc(IOC_READ|IOC_WRITE, "M".ord, dev)
   end # }}}
 end # }}}
 

@@ -14,6 +14,7 @@ Sur::Specification.new do |s|
     "icons/spkr_02.xbm"
   ]
 
-  # Need Subtlext::Icon#draw_rect
+  # Need specific versions
   s.subtlext_version = "0.9.1856"
+  s.sur_version      = "0.2.152"
 end
