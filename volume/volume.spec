@@ -6,8 +6,16 @@ Sur::Specification.new do |s|
   s.date        = "Fri Apr 2 22:40 CEST 2010"
   s.contact     = "unexist@dorfelite.net"
   s.description = "Control the volume with mouse wheel"
-  s.version     = "0.0"
-  s.tags        = [ "Icon", "Ioctl", "Linux" ]
+  s.notes       = <<NOTES
+This sublet shows the volume of the default mixer device, this works
+independently of the chosen sound system.
+
+Left click toggles mute, mouse wheel up and down changes the volume.
+
+Configurable settings: interval (Fixnum)
+NOTES
+  s.version     = "0.1"
+  s.tags        = [ "Icon", "Ioctl", "Linux", "Config" ]
   s.files       = [ "volume.rb" ]
   s.icons       = [
     "icons/spkr_01.xbm",

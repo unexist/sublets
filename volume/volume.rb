@@ -136,7 +136,6 @@ class Mixer
     height = (@volume.first * @icon.height / 100)
     @icon.clear
     @icon.draw_rect(0, @icon.height - height, @icon.width, height, true)
-    #end
   end # }}}
 
   ## finalize {{{
@@ -184,7 +183,7 @@ class Mixer
 end # }}}
 
 configure :volume do |s| # {{{
-  s.interval = 240
+  s.interval = s.config[:interval] || 240
   s.mixer    = Mixer.new
   s.icons    = {
     :on  => Subtlext::Icon.new("spkr_01.xbm"),
@@ -203,7 +202,7 @@ on :mouse_down do |s, x, y, b| # {{{
 end # }}}
 
 on :run do |s| # {{{
-  s.mixer.update
+  s.mixer.get_volume
 
   s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
 end # }}}
