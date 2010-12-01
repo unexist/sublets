@@ -1,46 +1,51 @@
-# Tasks sublet file                                                                                          
+# Tasks sublet file
 # Created with sur-0.1
-configure :tasks do |s|
-  s.interval = 60
-  s.col_norm = Subtlext::Color.new(COLORS[:fg_views])
-  s.col_high = Subtlext::Color.new(COLORS[:fg_focus])
-  s.clients  = Subtlext::Subtle.current_view.clients
-end
+configure :tasks do |s| # {{{
+  s.interval = 999
+  s.clients  = []
 
-helper do |s|
-  def makelist(list)
-    out = ""
+  # Get colors
+  colors = Subtlext::Subtle.colors
+  s.colors = {
+    :separator => s.config[:color_separator] || colors[:sublets_fg],
+    :active    => s.config[:color_active]    || colors[:views_fg],
+    :inactive  => s.config[:color_inactive]  || colors[:focus_fg]
+  }
 
-    # Sort by gravity
-    self.clients = list.sort do |a, b|
-      if(!a.nil? && !b.nil?)
-        a.gravity.id <=> b.gravity.id
-      else
-        -1
-      end
+  # Create separator
+  s.separator = "%s%s" % [
+    s.colors[:separator], s.config[:separator] || " | "
+  ]
+end # }}}
+
+helper do |s| # {{{
+  def makelist(list) # {{{
+    buttons = list.map do |c|
+      "%s%s" % [
+        self.colors[c.has_focus? ? :active : :inactive], c.instance
+      ]
     end
 
-    # Find client with focus
-    self.clients.each do |c|
-      if(c.has_focus?)
-        out << "#{self.col_high}#{c.name} "
-      else
-        out << "#{self.col_norm}#{c.name} "
-      end
-    end
+    self.data    = buttons.join(self.separator)
+    self.clients = list
+  rescue => error
+    self.data = "error"
+  end # }}}
+end # }}}
 
-    self.data = out.empty? ? "none" : out.chop #< Skip trailing whitespace
+on :tile do |s| # {{{
+  s.makelist(Subtlext::Client.visible)
+end # }}}
+
+on :client_focus do |s| # {{{
+  s.makelist(s.clients)
+end # }}}
+
+on :mouse_down do |s, x, y, b| # {{{
+  if(1 == b and 0 < s.clients.size)
+     # Stupid position check
+     buttonsize = s.geometry.width / s.clients.size
+     button     = (x / buttonsize).round
+     s.clients[button].focus
   end
-end
-
-on :run do |s|
-  s.makelist(s.clients)
-end
-
-on :client_focus do |s, c|
-  s.makelist(s.clients)
-end
-
-on :view_configure do |s, v|
-  s.makelist(v.clients)
-end
+end # }}}
