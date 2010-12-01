@@ -8,8 +8,8 @@ configure :tasks do |s| # {{{
   colors = Subtlext::Subtle.colors
   s.colors = {
     :separator => s.config[:color_separator] || colors[:sublets_fg],
-    :active    => s.config[:color_active]    || colors[:views_fg],
-    :inactive  => s.config[:color_inactive]  || colors[:focus_fg]
+    :active    => s.config[:color_active]    || colors[:focus_fg],
+    :inactive  => s.config[:color_inactive]  || colors[:views_fg]
   }
 
   # Create separator

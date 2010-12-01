@@ -13,7 +13,7 @@ client is highlighted and a click on a client name will focus it.
 Configurable settings: color_separator (String), color_active (String),
                        color_inactive (String), separator (String)
 NOTES
-  s.version     = "0.3"
+  s.version     = "0.31"
   s.tags        = [ "Mouse" ]
   s.files       = [ "tasks.rb" ]
   s.icons       = [ ]
