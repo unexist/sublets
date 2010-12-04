@@ -9,12 +9,15 @@ Sur::Specification.new do |s|
   s.notes       = <<NOTES
 This sublet displays all visible clients in a tasklist like fashion. Current
 client is highlighted and a click on a client name will focus it.
-
-Configurable settings: color_separator (String), color_active (String),
-                       color_inactive (String), separator (String)
 NOTES
-  s.version     = "0.31"
-  s.tags        = [ "Mouse" ]
+  s.config      = [
+    { :name => "color_active",    :type => "string",  :description => "Color of active window (#rrggbb)"    },
+    { :name => "color_inactive",  :type => "string",  :description => "Color of inactive window (#rrggbb)"  },
+    { :name => "color_separator", :type => "string",  :description => "Color of separator (#rrggbb)"        },
+    { :name => "separator",       :type => "string",  :description => "Separator between windows"           }
+  ]
+  s.version     = "0.32"
+  s.tags        = [ "Mouse", "Config" ]
   s.files       = [ "tasks.rb" ]
   s.icons       = [ ]
 end

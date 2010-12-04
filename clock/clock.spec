@@ -8,10 +8,11 @@ Sur::Specification.new do |s|
   s.description = "Show the clock and date"
   s.notes       = <<NOTES
 This sublet is just a simple clock.
-
-Configurable settings: interval (Fixnum), format_string (String)
 NOTES
-  s.version     = "0.32"
+  s.config      = [
+    { :name => "format_string", :type => "string",  :description => "Format of the clock (man date)" },
+  ]
+  s.version     = "0.33"
   s.tags        = [ "Icon", "Config" ]
   s.files       = [ "clock.rb" ]
   s.icons       = [ "icons/clock.xbm" ]
