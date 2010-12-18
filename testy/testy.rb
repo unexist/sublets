@@ -5,6 +5,10 @@ configure :testy do |s|
 end
 
 HOOKS = [
+  :start,
+  :exit,
+  :tile,
+  :reload,
   :client_create,
   :client_configure,
   :client_focus,
@@ -13,13 +17,14 @@ HOOKS = [
   :tag_kill,
   :view_create,
   :view_configure,
-  :view_focus,
+  :view_jump,
   :view_kill,
-  :exit
 ]
 
 EVENTS = [
   :run,
+  :data,
+  :watch,
   :mouse_down,
   :mouse_over,
   :mouse_out
@@ -28,5 +33,6 @@ EVENTS = [
 (EVENTS | HOOKS).each do |h|
   on h do |s|
     puts h
+    s.data = h.to_s
   end
 end

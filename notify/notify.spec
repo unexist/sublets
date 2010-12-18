@@ -16,7 +16,7 @@ again and all messages are discarded.
 
 (Max. length of a message is 50 characters)
 NOTES
-  s.version          = "0.41"
+  s.version          = "0.42"
   s.tags             = [ "FFI", "DBus", "Libnotify", "Icon", "Window" ]
   s.files            = [ "notify.rb" ]
   s.icons            = [ "icons/info.xbm" ]

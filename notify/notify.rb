@@ -619,9 +619,9 @@ configure :notify do |s| # {{{
   colors = Subtlext::Subtle.colors
 
   s.colors = {
-    :focus => colors[:fg_focus],
-    :text  => colors[:fg_panel],
-    :panel => colors[:bg_panel]
+    :focus => colors[:focus_fg],
+    :text  => colors[:panel_fg],
+    :panel => colors[:panel_bg]
   }
 
   # Icon

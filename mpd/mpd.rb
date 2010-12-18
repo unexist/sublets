@@ -1,5 +1,5 @@
-# Mpd sublet file                                                                                              
-# Created with sur-0.1                                                                                            
+# Mpd sublet file
+# Created with sur-0.1
 require "socket"
 
 configure :mpd do |s| # {{{
@@ -14,8 +14,8 @@ configure :mpd do |s| # {{{
   }
 
   # Options
-  s.host     = "localhost"
-  s.port     = 6600
+  s.host     = s.config["host"] || "localhost"
+  s.port     = s.config["port"] || 6600
   s.debug    = false
   s.interval = 999
 
@@ -43,14 +43,30 @@ helper do |s| # {{{
 
   ## connect {{{
   # Open connection to mpd
-  # @param [String, #read]  host  Hostname
-  # @param [Fixnum, #read]  port  Port
+  # @param [String]  host     Hostname
+  # @param [Fixnum]  port     Port
+  # @param [Fixnum]  timeout  Connection timeout
   # @return [Bool] Whether connection succeed
   ##
 
-  def connect(host, port)
+  def connect(host, port, timeout = 1)
     begin
-      self.socket = TCPSocket.new(host, port)
+      # Try to connect non-blockingto mpd
+      self.socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+      sockaddr    = Socket.sockaddr_in(port, host)
+
+      begin
+        self.socket.connect_nonblock(sockaddr)
+      rescue Errno::EINPROGRESS
+        sets = IO.select([ self.socket ], nil, nil, timeout)
+
+        raise Errno::ECONNREFUSED if(sets.nil?)
+
+        begin
+          self.socket.connect_nonblock(sockaddr)
+        rescue Errno::EISCONN
+        end
+      end
 
       # Handle SIGPIPE
       trap "PIPE" do
@@ -87,7 +103,7 @@ helper do |s| # {{{
   # @return [String] Read data
   ##
 
-  def safe_read(timeout = 0)
+  def safe_read(timeout = 1)
     line = ""
 
     begin
