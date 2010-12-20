@@ -8,11 +8,11 @@ Sur::Specification.new do |s|
   s.contact          = "unexist@dorfelite.net"
   s.description      = "Display memory usage"
   s.notes            = <<NOTES
-This sublet provided information about the used system memory via a kind of
+This sublet provides information about the used system memory via a kind of
 progressbar meters. It consists of a default bar, that displays the overall
-users memory and a small popup window. The popup is visible while the pointer
-is over the sublet and contains detailed usage of caches and buffers as well
-as swap.
+used memory and a small popup window. The popup is visible while the pointer
+is over the sublet and contains more bars about caches and buffers as well as
+swap.
 NOTES
   s.config           = [
     { :name => "width",  :type => "integer", :description => "Width of the bars" },
