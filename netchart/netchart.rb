@@ -19,7 +19,7 @@ class Chart < Subtlext::Icon # {{{
   # Add data to chart
   # @param [Fixnum, #read]  value  Value to add
   ##
-  
+
   def push(value)
     if(value.is_a?(Fixnum))
       norm = (value * @height) / 100 # Normalize size
@@ -55,7 +55,7 @@ end # }}}
 
 configure :net do |s| # {{{
   s.interval = 30
-  s.dev      = "wlan0"
+  s.dev      = s.config[:device] || "wlan0"
   s.limit    = 1000
   s.last     = 0
 
@@ -74,7 +74,7 @@ configure :net do |s| # {{{
   }
 end # }}}
 
-on :run do |s| # {{{
+on :run do |s| # {{{^
   begin
     # Fetch data
     data_rx = IO.readlines("/sys/class/net/#{s.dev}/statistics/rx_bytes").first.to_i
@@ -99,9 +99,9 @@ on :run do |s| # {{{
   rescue => error
     p error.to_s
     p error.backtrace
-  end  
+  end
 
-  self.data = "%s%s %s%s" % [ 
+  self.data = "%s%s %s%s" % [
     s.rx[:icon], s.rx[:gauge].to_s,
     s.tx[:icon], s.tx[:gauge].to_s
   ]
