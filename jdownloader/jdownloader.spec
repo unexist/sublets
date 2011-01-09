@@ -15,12 +15,14 @@ Per default it tries to connect to localhost on port 10025, the first icon is
 also a button and toggles start/stop, followed by current download rate and
 numbers of finished and total downloads of the queue.
 
-Configurable settings: interval (Fixnum), host (String), port (Fixnum)
-
 [1] http://jdownloader.org/knowledge/wiki/addons/list/remotecontrol
 [2] http://jdownloader.org
 NOTES
-  s.version     = "0.1"
+  s.config      = [
+    { :name => "host", :type => "string",  :description => "Hostname of the remote control" },
+    { :name => "port", :type => "integer", :description => "Port of the remove control" },
+  ]
+  s.version     = "0.2"
   s.tags        = [ "Icon", "HTTP", "Config" ]
   s.files       = [ "jdownloader.rb" ]
   s.icons       = [
@@ -29,8 +31,5 @@ NOTES
     "icons/net_down_01.xbm",
     "icons/diskette.xbm"
   ]
-
-  # Version requirements
-  s.subtlext_version = "0.9.2148"
-  # s.sur_version      = "0.2.168"
+  s.required_version = "0.9.2148"
 end
