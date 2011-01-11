@@ -10,15 +10,16 @@ configure :battery do |s|
 
   # Icons
   s.icons = {
-    :ac    => Subtlext::Icon.new("ac.xbm"),
-    :full  => Subtlext::Icon.new("bat_full_02.xbm"),
-    :low   => Subtlext::Icon.new("bat_low_02.xbm"),
-    :empty => Subtlext::Icon.new("bat_empty_02.xbm")
+    :ac      => Subtlext::Icon.new("ac.xbm"),
+    :full    => Subtlext::Icon.new("bat_full_02.xbm"),
+    :low     => Subtlext::Icon.new("bat_low_02.xbm"),
+    :empty   => Subtlext::Icon.new("bat_empty_02.xbm"),
+    :unknown => Subtlext::Icon.new("ac.xbm")
   }
 
   # Find battery slot and capacity
   begin
-    path = Dir["/sys/class/power_supply/B*"].first
+    path = s.config[:path] || Dir["/sys/class/power_supply/B*"].first
     now  = ""
     full = ""
 
@@ -58,6 +59,7 @@ on :run do |s|
           when 0..33   then :empty
         end
       when "Full"      then :ac
+      else                  :unknown
     end
 
     s.data = "%d%%%s" % [ percent, s.icons[icon] ]
