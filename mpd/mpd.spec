@@ -13,11 +13,8 @@ buttons like play and stop and random and shuffle mode.
 Dependent on the mpd version (>= 0.16), a running database update will be
 indicated as well.
 
-The output of the sublet can be customized by a format_string. Allowed are
-all fields, that are included in the output of the currentsong[1] command
-and all types of text, icons and colors.
-
-Following fields are commonly used:
+The output of the sublet can be customized by a format_string. Following
+fields are allowed alongside all kind of text, icons and colors:
 
 %note%   - Predefined icon
 %artist% - Name of the artist
