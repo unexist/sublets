@@ -2,6 +2,7 @@
 # Created with sur-0.1
 require "socket"
 
+# Pointer {{{
 class Pointer
   attr_accessor :value
 
@@ -12,7 +13,7 @@ class Pointer
   def to_s
     value.to_s
   end
-end
+end # }}}
 
 configure :mpd do |s| # {{{
   # Icons
