@@ -1,41 +1,59 @@
 # Layout sublet file
 # Created with sur-0.2.155
 configure :layout do |s| # {{{
-  s.interval = 9999
-  s.current  = Subtlext::View.current.name.to_sym
-  s.mode     = Hash[*Subtlext::View.all.collect { |v| [ v.name.to_sym, :grav ] }.flatten]
-
-  s.border   = s.config[:border] || 2
+  s.cur_view = Subtlext::View.current.name.to_sym
 
   # Icon for modes
-  s.modes    = {
-    :grav   => Subtlext::Icon.new("tg.xbm"),
-    :vert   => Subtlext::Icon.new("tv.xbm"),
-    :horz   => Subtlext::Icon.new("th.xbm"),
-    :left   => Subtlext::Icon.new("tl.xbm"),
-    :right  => Subtlext::Icon.new("tr.xbm"),
-    :top    => Subtlext::Icon.new("tt.xbm"),
-    :bottom => Subtlext::Icon.new("tb.xbm")
+  s.modes = {
+    :gravity     => Subtlext::Icon.new("tg.xbm"),
+    :vertical    => Subtlext::Icon.new("tv.xbm"),
+    :horzizontal => Subtlext::Icon.new("th.xbm"),
+    :left        => Subtlext::Icon.new("tl.xbm"),
+    :right       => Subtlext::Icon.new("tr.xbm"),
+    :top         => Subtlext::Icon.new("tt.xbm"),
+    :bottom      => Subtlext::Icon.new("tb.xbm")
   }
+
+  # Options
+  s.border = s.config[:border] || 2
+
+  # Check and set default layout
+  s.def_layout = s.config[:def_layout]
+  s.def_layout.to_sym if(s.def_layout.is_a?(String))
+  s.def_layout = :gravity unless(s.modes.keys.include?(s.def_layout))
+  s.data       = s.modes[s.def_layout].to_s
+
+  # Apply default layout to views
+  s.view_mode = Hash[
+    *Subtlext::View.all.collect { |v|
+      [ v.name.to_sym, s.def_layout ]
+    }.flatten
+  ]
 end # }}}
 
 helper do |s| # {{{
+  ## tile {{{
+  # Do the actual tiling
+  ##
+
   def tile
-    clients = Subtlext::View[self.current].clients
+    clients = Subtlext::View[self.cur_view].clients
 
     unless(clients.empty?)
       geometry = Subtlext::Screen.current.geometry
 
       # Tiling now
-      case self.mode[self.current]
-        when :vert, :horz # {{{
+      case self.view_mode[self.cur_view]
+        when :vertical, :horzizontal # {{{
           g    = Subtlext::Geometry.new(geometry)
           last = clients.pop
 
           # Calculate width and height
-          case self.mode[self.current]
-            when :vert then g.height = geometry.height / (clients.size + 1)
-            when :horz then g.width  = geometry.width / (clients.size + 1)
+          case self.view_mode[self.cur_view]
+            when :vertical
+              g.height = geometry.height / (clients.size + 1)
+            when :horzizontal
+              g.width  = geometry.width / (clients.size + 1)
           end
 
           # Update clients
@@ -45,17 +63,17 @@ helper do |s| # {{{
             ]
 
             # Steps
-            case self.mode[self.current]
-              when :vert then g.y += g.height
-              when :horz then g.x += g.width
+            case self.view_mode[self.cur_view]
+              when :vertical    then g.y += g.height
+              when :horzizontal then g.x += g.width
             end
           end
 
           # Fix rounding
-          case self.mode[self.current]
-            when :vert
+          case self.view_mode[self.cur_view]
+            when :vertical
               g.height += geometry.height - (clients.size + 1) * g.height
-            when :horz
+            when :horzizontal
               g.width  += geometry.width - (clients.size + 1) * g.width
           end
 
@@ -68,7 +86,7 @@ helper do |s| # {{{
           first = clients.shift
           size  = clients.size.zero? ? 1 : clients.size
 
-          case self.mode[self.current]
+          case self.view_mode[self.cur_view]
             when :left
               g.width = geometry.width / 2
               g.x     = geometry.x + g.width
@@ -92,7 +110,7 @@ helper do |s| # {{{
             g.x, g.y, g.width - 2 * self.border, g.height - 2 * self.border
           ]
 
-          case self.mode[self.current]
+          case self.view_mode[self.cur_view]
             when :left
               g.x      = geometry.x
               g.height = geometry.height / size
@@ -117,8 +135,8 @@ helper do |s| # {{{
               g.x, g.y, g.width - 2 * self.border, g.height - 2 * self.border
             ]
 
-            if(:left == self.mode[self.current] or
-                :right == self.mode[self.current])
+            if(:left == self.view_mode[self.cur_view] or
+                :right == self.view_mode[self.cur_view])
               g.y += g.height
             else
               g.x += g.width
@@ -126,28 +144,35 @@ helper do |s| # {{{
           end # }}}
       end
     end
+  end # }}}
 
-    self.data = self.modes[self.mode[self.current]].to_s
-  end
-end # }}}
+  ## select_layout # {{{
+  # Select layout for view
+  # @param [Fixnum]  dir  Direction
+  ##
 
-on :run do |s| # {{{
-  s.data = s.modes[:grav].to_s
+  def select_layout(dir = 1)
+    idx = self.modes.keys.index(self.view_mode[self.cur_view])
+
+    # Select next index
+    if((idx + dir) >= self.modes.size)
+      idx = 0
+    elsif((idx + dir) < 0)
+      idx = self.modes.size - 1
+    else
+      idx += dir
+    end
+
+    # Update view mode and icon
+    self.view_mode[self.cur_view] = self.modes.keys[idx]
+    self.data = self.modes[self.view_mode[self.cur_view]].to_s
+
+    tile
+  end # }}}
 end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
-  # Switch mode
-  s.mode[s.current] = case s.mode[s.current]
-    when :grav   then :vert
-    when :vert   then :horz
-    when :horz   then :left
-    when :left   then :right
-    when :right  then :top
-    when :top    then :bottom
-    when :bottom then :grav
-  end
-
-  tile
+  select_layout(1)
 end # }}}
 
 on :tile do |s| # {{{
@@ -155,14 +180,24 @@ on :tile do |s| # {{{
 end # }}}
 
 on :view_jump do |s, v| # {{{
-  s.current = v.name.to_sym
-  s.data    = s.modes[s.mode[s.current]].to_s
+  s.cur_view = v.name.to_sym
+  s.data     = s.modes[s.view_mode[s.cur_view]].to_s
 end # }}}
 
 on :view_create do |s, v| # {{{
-  s.mode[v.name.to_sym] = :grav
+  # Add view with default layout
+  s.view_mode[v.name.to_sym] = s.def_layout
 end # }}}
 
 on :view_kill do |s, v| # {{{
-  s.mode.delete(v.name.to_sym)
+  # Remove view from list
+  s.view_mode.delete(v.name.to_sym)
+end # }}}
+
+grab :LayoutNext do |s| # {{{
+  select_layout(1)
+end # }}}
+
+grab :LayoutPrev do |s| # {{{
+  select_layout(-1)
 end # }}}

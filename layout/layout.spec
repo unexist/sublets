@@ -11,7 +11,8 @@ Sur::Specification.new do |s|
 This sublet adds common automatic tiling capabilites to subtle for people who
 cannot live without. All tiling layouts work view wise and can be changed
 independently. It basically consists of an icon that shows a graphic of the
-current active layout and also works as button to toggle through all of them.
+current active layout. Clicking on it cycles through all of them and two grabs
+can be defined.
 
 Following layouts are available in given order:
   gravity    = No automatic tiling (default)
@@ -22,10 +23,28 @@ Following layouts are available in given order:
   top        = Tile top, master bottom
   bottom     = Tile bottom, master top
 NOTES
-  s.version     = "0.12"
-  s.tags        = [ "Layout", "Tiling", "Automatic", "Icon" ]
-  s.files       = [ "layout.rb" ]
-  s.icons       = [
+  s.config   = [
+    {
+      :name        => "border",
+      :type        => "integer",
+      :description => "Window border",
+      :def_value   => "2"
+    },
+    {
+      :name        => "def_layout",
+      :type        => "string",
+      :description => "Default layout",
+      :def_value   => "gravity"
+    }
+  ]
+  s.grabs    = {
+    :LayoutNext => "Select next layout",
+    :LayoutPrev => "Select previous layout"
+  }
+  s.version  = "0.14"
+  s.tags     = [ "Layout", "Tiling", "Automatic", "Icon", "Config", "Grab" ]
+  s.files    = [ "layout.rb" ]
+  s.icons    = [
     "icons/tb.xbm",
     "icons/tf.xbm",
     "icons/tg.xbm",
@@ -37,5 +56,5 @@ NOTES
   ]
 
   # Need specific version
-  s.required_version = "0.9.2565"
+  s.required_version = "0.9.2597"
 end
