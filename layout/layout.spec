@@ -56,5 +56,5 @@ NOTES
   ]
 
   # Need specific version
-  s.required_version = "0.9.2597"
+  s.required_version = "0.9.2608"
 end
