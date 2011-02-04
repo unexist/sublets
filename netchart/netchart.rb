@@ -74,7 +74,7 @@ configure :net do |s| # {{{
   }
 end # }}}
 
-on :run do |s| # {{{^
+on :run do |s| # {{{
   begin
     # Fetch data
     data_rx = IO.readlines("/sys/class/net/#{s.dev}/statistics/rx_bytes").first.to_i

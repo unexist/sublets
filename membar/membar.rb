@@ -41,7 +41,7 @@ class Bar
 
   def to_s
     "%-8s %3d%% %s" % [ @name + ":", @value, @icon ]
-  end
+  end # }}}
 end # }}}
 
 configure :membar do |s| # {{{
