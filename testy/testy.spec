@@ -15,10 +15,7 @@ NOTES
   s.tags        = [ "Test" ]
   s.files       = [ "testy.rb" ]
   s.icons       = [ ]
-
-  # Version requirements
-  # s.subtlext_version = "0.9.2127"
-  # s.sur_version      = "0.2.168"
+  # s.required_version = "0.9.2127"
 
   # Gem requirements
   # s.add_dependency("subtle", "~> 0.1.2")
