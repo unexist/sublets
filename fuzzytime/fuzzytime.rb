@@ -33,7 +33,7 @@ configure :fuzzytime do |s|
 
   # Select locale
   locale = s.config[:locale]
-  locale = locale.to_sym if(locale.is_a?(String)
+  locale = locale.to_sym if(locale.is_a?(String))
 
   if(s.locales.include?(locale))
     s.locale = s.locales[locale]
