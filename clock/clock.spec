@@ -10,7 +10,12 @@ Sur::Specification.new do |s|
 This sublet is just a simple clock.
 NOTES
   s.config      = [
-    { :name => "format_string", :type => "string",  :description => "Format of the clock (man date)" },
+    {
+      :name        => "format_string",
+      :type        => "string",
+      :description => "Format of the clock (man date)",
+      :def_value   => "%y/%m/%d %H:%M"
+    },
   ]
   s.version     = "0.33"
   s.tags        = [ "Icon", "Config" ]
