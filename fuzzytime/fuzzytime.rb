@@ -28,6 +28,31 @@ configure :fuzzytime do |s|
         "zwanzig vor %1", "viertel vor %1", "zehn vor %1", "fünf vor %1",
         "%1 uhr"
       ]
+    },
+    :fr => {
+      :numbers => [
+        "une heure", "deux heures", "trois heures", "quatre heures",
+        "cinq heures", "six heures", "sept heures", "huit heures",
+        "neuf heures", "dix heures", "onze heures", "douze heures"
+      ],
+      :text => [
+        "%0", "%0 cinq", "%0 dix", "%0 quart", "%0 vingt",
+        "%0 vingt-cinq", "%0 et demie", "%1 moins vingt",
+        "%1 moins vingt-cinq", "%1 moins quart", "%1 moins dix",
+        "%1 moin cinq", "%1"
+      ]
+    },
+    :es => {
+      :numbers => [
+        "uno", "dos", "tres", "cuatro", "cinco", "seis",
+        "siete", "ocho", "nueve", "diez", "once", "doce"
+      ],
+      :text => [
+        "%0 en punto", "%0 y cinco", "%0 y diez", "%0 y cuarto",
+        "%0 y veinte", "%0 y veinticinco", "%0 y media",
+        "%1 menos veinticinco", "%1 menos veinte", "%1 menos cuarto",
+        "%1 menos diez", "%1 menos cinco", "%1 en punto"
+      ]
     }
   }
 
