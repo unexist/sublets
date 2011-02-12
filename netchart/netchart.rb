@@ -1,108 +1,133 @@
 # Netchart sublet file
 # Created with sur-0.1.129
 class Chart < Subtlext::Icon # {{{
-  # Data store
-  attr_accessor :data
 
   ## initialize {{{
   # Initialize chart
-  # @param [Fixnum, #read]  width   Icon width
-  # @param [Fixnum, #read]  height  Icon height
+  # @param [String]           dev     Device name
+  # @param [Subtlext::Color]  rx      Color for rx
+  # @param [Subtlext::Color]  tx      Color for tx
+  # @param [Subtlext::Color]  bg      Color for background
+  # @param [Fixnum]           width   Chart width
+  # @param [Fixnum]           height  Chart height
   ##
 
-  def initialize(width, height)
-    super
-    @data = []
+  def initialize(dev, rx, tx, bg, width = 50, height = 10)
+    super(width, height, true)
+
+    @dev     = dev
+    @limit   = 1000
+    @last    = 0
+
+    @col_rx  = rx
+    @col_tx  = tx
+    @col_bg  = bg
+
+    @data_rx = []
+    @data_tx = []
+
+    @last_rx = 0
+    @last_tx = 0
+
+    clear
   end # }}}
 
-  ## push {{{
-  # Add data to chart
-  # @param [Fixnum, #read]  value  Value to add
+  ## update {{{
+  # Update data
   ##
 
-  def push(value)
-    if(value.is_a?(Fixnum))
-      norm = (value * @height) / 100 # Normalize size
+  def update
+    time   = Time.now.to_i
+    delta  = time - @last
+    @last = time
 
-      # Add data and shift last
-      @data.push(0 == norm ? 1 : norm)
-      @data.shift if(15 < @data.size)
+    # Fetch data
+    cur_rx = IO.readlines("/sys/class/net/#{@dev}/statistics/rx_bytes").first.to_i
+    cur_tx = IO.readlines("/sys/class/net/#{@dev}/statistics/tx_bytes").first.to_i
 
-      render
-    end
+    # Get rx/tx per second in kb
+    rx = ((cur_rx - @last_rx) / delta / 1024.0).ceil
+    tx = ((cur_tx - @last_tx) / delta / 1024.0).ceil
+
+    # Store values
+    @last_rx = cur_rx
+    @last_tx = cur_tx
+
+    # Update arrays
+    append_or_shift(@data_rx, rx * 100 / @limit)
+    append_or_shift(@data_tx, tx * 100 / @limit)
   end # }}}
 
   ## render {{{
   # Render chart
 
   def render
-    i = 0
     clear
+    draw_rect(0, 0, @width, @height, true, @col_bg)
+    draw_bar(@data_rx, @col_rx)
+    draw_bar(@data_tx, @col_tx)
+  end # }}}
 
-    # Draw bars
-    ((@width - (@data.size * 2))..@width).step(2) do |x|
-      if(i < @data.size)
-        ((@height - @data[i])..@height).each do |y|
-          draw(x, y)
-          draw(x + 1, y)
-        end
+  private
+
+  def draw_bar(ary, col) # {{{
+    i = 0
+
+    ((@width - (ary.size * 2))..@width).step(2) do |x|
+      if(i < ary.size)
+        draw_point(x, @height - ary[i], col, @panel)
+        draw_point(x + 1, @height - ary[i], col, @panel)
       end
 
       i += 1
     end
   end # }}}
+
+  def append_or_shift(ary, value) # {{{
+    if(value.is_a?(Fixnum))
+      norm = (value * @height) / 100 # Normalize size
+
+      # Add data and shift last
+      ary.push(0 == norm ? 1 : norm)
+      ary.shift if(@width / 2 < ary.size)
+    end
+  end # }}}
 end # }}}
 
-configure :net do |s| # {{{
-  s.interval = 30
-  s.dev      = s.config[:device] || "wlan0"
-  s.limit    = 1000
-  s.last     = 0
+configure :netchart do |s| # {{{
+  colors = Subtlext::Subtle.colors
 
-  # Init rx
-  s.rx = {
-    :gauge => Chart.new(30, 10),
-    :icon  => Subtlext::Icon.new("net_down_03.xbm"),
-    :data  => 0
+  # Config
+  s.interval = s.config[:interval] || 30
+  s.title    = s.config[:title].nil? ? "" : "%s " % [ s.config[:title] ]
+  s.colors   = {
+    :rx => Subtlext::Color.new(s.config[:rx_color] || colors[:focus_fg]),
+    :tx => Subtlext::Color.new(s.config[:tx_color] || colors[:views_fg])
   }
 
-  # Init tx
-  s.tx = {
-    :gauge => Chart.new(30, 10),
-    :icon  => Subtlext::Icon.new("net_up_03.xbm"),
-    :data  => 0
+  # Icons
+  s.icons = {
+    :rx => Subtlext::Icon.new("rx.xbm"),
+    :tx => Subtlext::Icon.new("tx.xbm")
   }
+
+  # Chart
+  s.chart = Chart.new(
+    s.config[:device] || "eth0",
+    s.colors[:rx],
+    s.colors[:tx],
+    Subtlext::Color.new(s.config[:bg_color] || colors[:panel]),
+    s.config[:width] || 50,
+    s.config[:height] || 10
+  )
 end # }}}
 
 on :run do |s| # {{{
-  begin
-    # Fetch data
-    data_rx = IO.readlines("/sys/class/net/#{s.dev}/statistics/rx_bytes").first.to_i
-    data_tx = IO.readlines("/sys/class/net/#{s.dev}/statistics/tx_bytes").first.to_i
+  s.chart.update
+  s.chart.render
 
-    # Get time
-    time   = Time.now.to_i
-    delta  = time - s.last
-    s.last = time
-
-    # Get rx/tx per second in kb
-    rx = ((data_rx - s.rx[:data]) / delta / 1024.0).ceil
-    tx = ((data_tx - s.tx[:data]) / delta / 1024.0).ceil
-
-    # Store values
-    s.rx[:data] = data_rx
-    s.tx[:data] = data_tx
-
-    # Update gauges
-    s.rx[:gauge].push(rx * 100 / s.limit)
-    s.tx[:gauge].push(tx * 100 / s.limit)
-  rescue => error
-    p error.to_s
-    p error.backtrace
-  end
-
-  self.data = "%s%s %s%s" % [
-    s.rx[:icon], s.rx[:gauge].to_s,
-    s.tx[:icon], s.tx[:gauge].to_s
+  self.data = "%s%s%s%s%s%s" % [
+    s.title, s.colors[:rx], s.icons[:rx], s.chart,
+    s.colors[:tx], s.icons[:tx]
   ]
 end # }}}
