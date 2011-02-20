@@ -7,9 +7,9 @@ configure :tasks do |s| # {{{
   # Get colors
   colors = Subtlext::Subtle.colors
   s.colors = {
-    :active    => s.config[:color_active]    || colors[:focus_fg],
-    :inactive  => s.config[:color_inactive]  || colors[:views_fg],
-    :separator => s.config[:color_separator] || colors[:sublets_fg]
+    :active    => Subtlext::Color.new(s.config[:color_active]    || colors[:focus_fg]),
+    :inactive  => Subtlext::Color.new(s.config[:color_inactive]  || colors[:views_fg]),
+    :separator => Subtlext::Color.new(s.config[:color_separator] || colors[:sublets_fg])
   }
 
   # Use client modes
