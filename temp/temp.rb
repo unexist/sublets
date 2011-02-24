@@ -1,31 +1,24 @@
 # Temp sublet file
 # Created with sur-0.1
-configure :temp do |s|
+configure :temp do |s| # {{{
   s.interval = 60
   s.temp     = ""
   s.icon     = Subtlext::Icon.new("temp.xbm")
 
+  # Get temp slot
+  s.path = Dir["/sys/devices/virtual/thermal/thermal_zone*"].first
+  s.path = File.join(s.path, "temp")
+end # }}}
+
+on :run do |s| # {{{
   begin
-    s.path = Dir["/proc/acpi/thermal_zone/*"][0] #< Get temp slot
-  rescue => err
-    err
-  end
-end
+    file = IO.readlines(s.path).join
 
-on :run do |s|
-  begin
-    file = ""
+    s.temp = file.to_f / 1000
 
-    # Read temp state file
-    File.open(s.path + "/temperature", "r") do |f|
-      file = f.read
-    end
-
-    s.temp = file.match(/temperature:\s+(\d+)/).captures.first
-
-    s.data = s.icon + s.temp.to_s + "C"
+    s.data = "%s%.1fC" % [ s.icon, s.temp ]
   rescue => err # Sanitize to prevent unloading
     s.data = "subtle"
     p err
   end
-end
+end # }}}
