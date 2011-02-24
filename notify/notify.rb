@@ -2,6 +2,46 @@
 # Created with sur-0.2.168
 require "ffi"
 
+# Message class
+class Message # {{{
+  # Message id
+  attr_reader :id
+
+  # Icon for message
+  attr_reader :icon
+
+  # Summary of the message
+  attr_reader :summary
+
+  # Body of the message
+  attr_reader :body
+
+  # Message timeout
+  attr_reader :timeout
+
+  ## initialize {{{
+  # Create a new message
+  # @param [String]  summary  Message summary
+  # @param [String]  body     Message body
+  # @param [String]  icon     Message icon
+  # @param [Fixnum]  timeout  Message timeout
+  ##
+
+  def initialize(summary = "", body = "", icon = "", timeout = 0)
+    @@id ||= 0
+
+    # Add data
+    @id      = @@id
+    @summary = summary
+    @body    = body
+    @icon    = icon
+    @timeout = timeout
+
+    # Increase message count
+    @@id += 1
+  end # }}}
+end # }}}
+
 # DBus interface
 class DBus # {{{
   extend FFI::Library
@@ -17,29 +57,282 @@ class DBus # {{{
   # DBus interface
   DBUS_IFACE = "org.freedesktop.Notifications"
 
-  # DBus connection
-  attr_reader :connection
+  # DBus filter
+  DBUS_FILTER = "path='#{DBUS_PATH}', interface='#{DBUS_IFACE}'"
 
   # DBus connection file descriptor
   attr_reader :fd
 
-  # DBus error
-  attr_reader :error
+  # Notification messages
+  attr_accessor :messages
 
-  # Message id
-  attr_reader :id
+  # Methods
 
-  # Icon for message
-  attr_reader :icon
+  ## initialize {{{
+  # Initialize the class
+  # @return [Object] New #DBus object
+  ###
 
-  # Summary of the notify
-  attr_reader :summary
+  def initialize
+    # Init error
+    @error   = DBusError.new
+    @lasterr = ""
 
-  # Body of the notify
-  attr_reader :body
+    dbus_error_init(@error) #< Init error
 
-  # Message timeout
-  attr_reader :timeout
+    # Create connection
+    @connection = dbus_bus_get(:bus_session, @error)
+
+    raise "Couldn't connect to dbus" if(any_error?)
+
+    # Request name and replace current owner
+    reply = dbus_bus_request_name(@connection, DBUS_NAME,
+      :flag_replace, @error)
+
+    raise "Couldn't request notification interface" if(any_error?)
+
+    # Check reply of request
+    if(DBusRequestReply[:reply_primary] != reply)
+      puts "Failed requesting ownership of `#{DBUS_NAME}': %s" % [
+        case(reply)
+          when 2 then "Service has been placed in queue"
+          when 3 then "Service is already in queue"
+          when 4 then "Service is already primary owner"
+        end
+      ]
+    end
+
+    # Get socket file descriptor
+    pfd = FFI::MemoryPointer.new(:int)
+
+    dbus_connection_get_unix_fd(@connection, pfd)
+
+    @fd = pfd.null? ? 0 : pfd.read_int
+
+    # Add message filter
+    dbus_bus_add_match(@connection, DBUS_FILTER, @error)
+    dbus_connection_flush(@connection)
+
+    raise "Couldn't apply message filter" if(any_error?)
+
+    @messages = []
+
+    # Initially fetch
+    fetch
+  end # }}}
+
+  ## fetch {{{
+  # Fetch data from connection
+  # @return [Bool] Whether fetch was successful
+  ##
+
+  def fetch
+    ret = false
+
+    dbus_connection_read_write(@connection, 0)
+
+    mesg = dbus_connection_pop_message(@connection)
+
+    # Check whether message is of desired type
+    unless(mesg.null?)
+      # UINT32 org.freedesktop.Notifications.Notify(
+      #   STRING app_name, UINT32 replaces_id, STRING app_icon,
+      #   STRING summary, STRING body, ARRAY actions, DICT hints,
+      #   INT32 expire_timeout
+      # )
+      if(dbus_message_is_method_call(mesg, DBUS_IFACE, "Notify"))
+        get_message(mesg)
+
+        ret = true
+      # void org.freedesktop.Notifications.GetServerInformation(
+      #   out STRING name, out STRING vendor, out STRING version
+      # )
+      elsif(dbus_message_is_method_call(mesg, DBUS_IFACE,
+          "GetServerInformation"))
+        get_server_info(mesg)
+
+        ret = false
+      # STRING_ARRAY org.freedesktop.Notifications.GetCapabilities(void)
+      elsif(dbus_message_is_method_call(mesg, DBUS_IFACE, "GetCapabilities"))
+        get_capabilities(mesg)
+
+        ret = false
+      else
+        fetch #< Repeat until we get something reasonable
+      end
+    end
+
+    ret
+  end # }}}
+
+  ## kill {{{
+  # Kill object
+  ##
+
+  def kill
+    if(dbus_connection_get_is_connected(@connection))
+      # Remove message filter
+      dbus_bus_remove_match(@connection, DBUS_FILTER, nil)
+
+      # Release name
+      dbus_bus_release_name(@connection, DBUS_NAME, @error)
+
+      any_error? #< Just ignore
+
+      # Unref connection
+      dbus_connection_flush(@connection)
+      dbus_connection_unref(@connection)
+    end
+  end # }}}
+
+  private
+
+  def any_error? # {{{
+    ret = false
+
+    # Check if error is set
+    if(dbus_error_is_set(@error))
+      dbus_error_free(@error)
+
+      ret = true
+    end
+
+    ret
+  end # }}}
+
+  def str2ptr(str) # {{{
+    value = FFI::MemoryPointer.from_string(str)
+    ptr   = FFI::MemoryPointer.new(:pointer)
+
+    ptr.put_pointer(0, value)
+
+    ptr
+  end # }}}
+
+  def iter2fixnum(iter) # {{{
+    ret = 0
+
+    begin
+      pvalue = FFI::MemoryPointer.new(:int)
+
+      dbus_message_iter_get_basic(iter, pvalue)
+      dbus_message_iter_next(iter)
+
+      ret = pvalue.null? ? 0 : pvalue.read_int
+    rescue
+      ret = 0
+    end
+
+    ret
+  end # }}}
+
+  def iter2string(iter) # {{{
+    ret = ""
+
+    # Get string part from iter
+    begin
+      pvalue = FFI::MemoryPointer.new(:pointer)
+
+      dbus_message_iter_get_basic(iter, pvalue)
+      dbus_message_iter_next(iter)
+
+      svalue = pvalue.read_pointer
+
+      ret = svalue.null? ? "" : svalue.read_string
+    rescue
+      ret = ""
+    end
+
+    ret
+  end # }}}
+
+  def get_message(mesg) # {{{
+    # Create iter
+    iter  = DBusMessageIter.new
+    piter = iter.pointer
+    dbus_message_iter_init(mesg, piter)
+
+    # Collect data from message
+    name    = iter2string(piter)
+    replace = iter2fixnum(piter)
+    icon    = iter2string(piter)
+    summary = iter2string(piter)
+    body    = iter2string(piter)
+
+    # Ignore array and hints
+    dbus_message_iter_next(piter)
+    dbus_message_iter_next(piter)
+
+    timeout = iter2fixnum(piter)
+
+    # Create reply to mark message as read
+    reply = dbus_message_new_method_return(mesg)
+    pid   = FFI::MemoryPointer.new(:uint32)
+
+    # Create iter
+    iter  = DBusMessageIter.new
+    piter = iter.pointer
+
+    # Append data to iter
+    dbus_message_iter_init_append(reply, piter)
+    dbus_message_iter_append_basic(piter, :type_uint32, pid)
+    dbus_connection_send(@connection, reply, nil)
+    dbus_connection_flush(@connection)
+    dbus_message_unref(reply)
+
+    dbus_message_unref(mesg)
+
+    # Append new message
+    @messages << Message.new(summary, body, icon, timeout)
+  end # }}}
+
+  def get_server_info(mesg) # {{{
+    # Create reply
+    reply    = dbus_message_new_method_return(mesg)
+    pname    = str2ptr("subtle")
+    pvendor  = str2ptr("http://subtle.subforge.org")
+    pversion = str2ptr("0.0")
+    pspec    = str2ptr("0.9")
+
+    # Create iter
+    iter  = DBusMessageIter.new
+    piter = iter.pointer
+
+    dbus_message_iter_init_append(reply, piter)
+    dbus_message_iter_append_basic(piter, :type_string, pname)
+    dbus_message_iter_append_basic(piter, :type_string, pvendor)
+    dbus_message_iter_append_basic(piter, :type_string, pversion)
+    dbus_message_iter_append_basic(piter, :type_string, pspec)
+    dbus_connection_send(@connection, reply, nil)
+    dbus_connection_flush(@connection)
+    dbus_message_unref(reply)
+  end # }}}
+
+  def get_capabilities(mesg) # {{{
+    # Create reply
+    reply = dbus_message_new_method_return(mesg)
+
+    # Create iters
+    iter  = DBusMessageIter.new
+    piter = iter.pointer
+
+    dataiter  = DBusMessageIter.new
+    pdataiter = dataiter.pointer
+
+    # Create array
+    pbody = str2ptr("body")
+
+    dbus_message_iter_init_append(reply, piter)
+    dbus_message_iter_open_container(piter, :type_array,
+      DBusType[:type_string].chr, pdataiter)
+    dbus_message_iter_append_basic(pdataiter, :type_string, pbody)
+    dbus_message_iter_close_container(piter, pdataiter)
+    dbus_connection_send(@connection, reply, nil)
+    dbus_connection_flush(@connection)
+    dbus_message_unref(reply)
+  end # }}}
+
+ # Datatypes
 
   # DBusType {{{
   DBusBusType = enum(
@@ -78,9 +371,14 @@ class DBus # {{{
   # DBusError {{{
   class DBusError < FFI::Struct
     layout(
-      :name,    :string,
-      :message, :string,
-      :dummy,   :char    #< Place holder
+      :name,    :pointer,
+      :message, :pointer,
+      :dummy1,  :uint32,
+      :dummy2,  :uint32,
+      :dummy3,  :uint32,
+      :dummy4,  :uint32,
+      :dummy5,  :uint32,
+      :pad,     :pointer
     )
   end # }}}
 
@@ -104,248 +402,39 @@ class DBus # {{{
     )
   end # }}}
 
-  ## initialize {{{
-  # Initialize the class
-  #
-  # @return [Object] New #DBus object
-  ###
-
-  def initialize
-    # Init error
-    perror = FFI::MemoryPointer.new(:pointer)
-    @error = DBusError.new(perror)
-
-    dbus_error_init(@error) #< Init error
-
-    # Create connection and replace current owner
-    @connection = dbus_bus_get(:bus_session, @error)
-
-    raise "Couldn't connect to dbus" if(@connection.nil?)
-
-    reply = dbus_bus_request_name(@connection, DBUS_NAME,
-      :flag_replace, @error)
-
-    if(DBusRequestReply[:reply_primary] != reply)
-      puts "Failed requesting ownership of `#{DBUS_NAME}': %s" % [
-        case(reply)
-          when 2 then "Service has been placed in queue"
-          when 3 then "Service is already in queue"
-          when 4 then "Service is already primary owner"
-        end
-      ]
-    end
-
-    # Get socket file descriptor
-    pfd = FFI::MemoryPointer.new(:int)
-
-    dbus_connection_get_unix_fd(@connection, pfd)
-
-    @fd = pfd.null? ? 0 : pfd.read_int
-
-    # Add message filter
-    dbus_bus_add_match(@connection,
-      "path='#{DBUS_PATH}', interface='#{DBUS_IFACE}'", @error)
-    dbus_connection_flush(@connection)
-    fetch
-
-    @id = 0 #< Init counter
-  end # }}}
-
-  ## fetch {{{
-  # Fetch data from connection
-  #
-  # @return [Bool] Whether fetch was successful
-  ##
-
-  def fetch
-    ret = false
-
-    dbus_connection_read_write(@connection, 0)
-
-    mesg = dbus_connection_pop_message(@connection)
-
-    # Check whether message is of desired type
-    unless(mesg.null?)
-      # UINT32 org.freedesktop.Notifications.Notify (STRING app_name,
-      #   UINT32 replaces_id, STRING app_icon, STRING summary,
-      #   STRING body, ARRAY actions, DICT hints, INT32 expire_timeout);
-      if(dbus_message_is_method_call(mesg, DBUS_IFACE, "Notify"))
-        @id += 1
-
-        # Create iter
-        iter  = DBusMessageIter.new
-        piter = iter.pointer
-        dbus_message_iter_init(mesg, piter)
-
-        # Collect data from message
-        name     = get_string(piter)
-        replace  = get_fixnum(piter)
-        @icon    = get_string(piter)
-        @summary = get_string(piter)
-        @body    = get_string(piter)
-
-        # Ignore array and hints
-        dbus_message_iter_next(piter)
-        dbus_message_iter_next(piter)
-
-        @timeout = get_fixnum(piter)
-
-        # Create reply
-        reply = dbus_message_new_method_return(mesg)
-        pid   = FFI::MemoryPointer.new(:uint32)
-        pid.write_int(@id)
-
-        # Create iter
-        iter  = DBusMessageIter.new
-        piter = iter.pointer
-
-        # Append data to iter
-        dbus_message_iter_init_append(reply, piter)
-        dbus_message_iter_append_basic(piter, :type_uint32, pid)
-        dbus_connection_send(@connection, reply, nil)
-        dbus_connection_flush(@connection)
-        dbus_message_unref(reply)
-
-        dbus_message_unref(mesg)
-
-        ret = true
-      # void org.freedesktop.Notifications.GetServerInformation (
-      #   out STRING name, out STRING vendor, out STRING version);
-      elsif(dbus_message_is_method_call(mesg, DBUS_IFACE,
-          "GetServerInformation"))
-        puts "GetServerInformation"
-
-        # Create reply
-        reply    = dbus_message_new_method_return(mesg)
-        pname    = str2ptr("subtle")
-        pvendor  = str2ptr("http://subtle.subforge.org")
-        pversion = str2ptr("0.0")
-        pspec    = str2ptr("0.9")
-
-        # Create iter
-        iter  = DBusMessageIter.new
-        piter = iter.pointer
-
-        dbus_message_iter_init_append(reply, piter)
-        dbus_message_iter_append_basic(piter, :type_string, pname)
-        dbus_message_iter_append_basic(piter, :type_string, pvendor)
-        dbus_message_iter_append_basic(piter, :type_string, pversion)
-        dbus_message_iter_append_basic(piter, :type_string, pspec)
-        dbus_connection_send(@connection, reply, nil)
-        dbus_connection_flush(@connection)
-        dbus_message_unref(reply)
-
-        ret = false
-      # STRING_ARRAY org.freedesktop.Notifications.GetCapabilities (void);
-      elsif(dbus_message_is_method_call(mesg, DBUS_IFACE, "GetCapabilities"))
-        puts "GetCapabilities"
-
-        # Create reply
-        reply = dbus_message_new_method_return(mesg)
-
-        # Create iters
-        iter  = DBusMessageIter.new
-        piter = iter.pointer
-
-        dataiter  = DBusMessageIter.new
-        pdataiter = dataiter.pointer
-
-        # Create array
-        pbody = str2ptr("body")
-
-        dbus_message_iter_init_append(reply, piter)
-        dbus_message_iter_open_container(piter, :type_array,
-          DBusType[:type_string].chr, pdataiter)
-        dbus_message_iter_append_basic(pdataiter, :type_string, pbody)
-        dbus_message_iter_close_container(piter, pdataiter)
-        dbus_connection_send(@connection, reply, nil)
-        dbus_connection_flush(@connection)
-        dbus_message_unref(reply)
-
-        ret = false
-      else
-        fetch #< Repeat until we get something reasonable
-      end
-    end
-
-    ret
-  end # }}}
-
-  ## finalize {{{
-  # Finalize object
-  ##
-
-  def finalize
-    dbus_connection_unref(@connection)
-  end # }}}
-
-  private
-
-  # str2ptr {{{
-  def str2ptr(str)
-    value = FFI::MemoryPointer.from_string(str)
-    ptr   = FFI::MemoryPointer.new(:pointer)
-
-    ptr.put_pointer(0, value)
-
-    ptr
-  end # }}}
-
-  # get_fixnum {{{
-  def get_fixnum(iter)
-    ret = 0
-
-    begin
-      pvalue = FFI::MemoryPointer.new(:int)
-
-      dbus_message_iter_get_basic(iter, pvalue)
-      dbus_message_iter_next(iter)
-
-      ret = pvalue.null? ? 0 : pvalue.read_int
-    rescue
-      ret = 0
-    end
-
-    ret
-  end # }}}
-
-  # get_string {{{
-  def get_string(iter)
-    ret = ""
-
-    # Get string part from iter
-    begin
-      pvalue = FFI::MemoryPointer.new(:pointer)
-
-      dbus_message_iter_get_basic(iter, pvalue)
-      dbus_message_iter_next(iter)
-
-      svalue = pvalue.read_pointer
-
-      ret = svalue.null? ? "" : svalue.read_string
-    rescue
-      ret = ""
-    end
-
-    ret
-  end # }}}
+  # FFI
 
   ## dbus_error_init {{{
   # Init error struct
-  #
-  # @param [Pointer, #write]  error  A #DBusError
+  # @param [Pointer]  error  A #DBusError
   ##
 
   attach_function(:dbus_error_init,
     :dbus_error_init, [ :pointer ], :void
   ) # }}}
 
+  ## dbus_error_is_set {{{
+  # Whether error is set
+  # @param [Pointer]  error  A #DBusError
+  ##
+
+  attach_function(:dbus_error_is_set,
+    :dbus_error_is_set, [ :pointer ], :bool
+  ) # }}}
+
+  ## dbus_error_free {{{
+  # Free dbus error
+  # @param [Pointer]  error  A #DBusError
+  ##
+
+  attach_function(:dbus_error_free,
+    :dbus_error_free, [ :pointer ], :void
+  ) # }}}
+
   ## dbus_bus_get {{{
   # Connect to bus daemon and register client
-  #
-  # @param [Fixnum,  #read]  type   A #DBusBusType
-  # @param [Pointer, #read]  error  A #DBusError
-  #
+  # @param [Fixnum]   type   A #DBusBusType
+  # @param [Pointer]  error  A #DBusError
   # @return [Pointer]  A #DBusConnection
   ##
 
@@ -355,12 +444,10 @@ class DBus # {{{
 
   ## dbus_bus_request_name {{{
   # Ask bus to assign specific name
-  #
-  # @param [Pointer, #read]  connection  A #DBusConnection
-  # @param [String,  #read]  name        Name to request
-  # @param [Fixnum,  #read]  flags       Flags
-  # @param [Pointer, #read]  error       A #DBusError
-  #
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [String]   name        Name to request
+  # @param [Fixnum]   flags       Flags
+  # @param [Pointer]  error       A #DBusError
   # @return [Fixnum] Result code, -1 if error is set
   ##
 
@@ -369,24 +456,43 @@ class DBus # {{{
     :int
   ) # }}}
 
+  ## dbus_bus_release_name {{{
+  # Ask bus to release specific name
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [String]   name        Name to release
+  # @param [Pointer]  error       A #DBusError
+  ##
+
+  attach_function(:dbus_bus_release_name,
+    :dbus_bus_release_name, [ :pointer, :string, :pointer ], :void
+  ) # }}}
+
   ## dbus_bus_add_match {{{
   # Add rule for messages to receive
-  #
-  # @param [Pointer, #read]   connection  A #DBusConnection
-  # @param [String,  #read]   rule        Matching rule
-  # @param [Poiner,  #write]  error       A #DBusError
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [String]   rule        Matching rule
+  # @param [Poiner]   error       A #DBusError
   ##
 
   attach_function(:dbus_bus_add_match,
     :dbus_bus_add_match, [ :pointer, :string, :pointer ], :void
   ) # }}}
 
+  ## dbus_bus_remove_match {{{
+  # Remove rule for messages
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [String]   rule        Matching rule
+  # @param [Poiner]   error       A #DBusError
+  ##
+
+  attach_function(:dbus_bus_remove_match,
+    :dbus_bus_remove_match, [ :pointer, :string, :pointer ], :void
+  ) # }}}
+
   ## dbus_connection_read_write {{{
   # Check connection for data
-  #
-  # @param [Pointer, #read]  connection            A #DBusConnection
-  # @param [Fixnum,  #read]  timeout_milliseconds  Timeout in milliseconds
-  #
+  # @param [Pointer]  connection            A #DBusConnection
+  # @param [Fixnum]   timeout_milliseconds  Timeout in milliseconds
   # @return [Bool]  Whether data is available
   ##
 
@@ -396,9 +502,7 @@ class DBus # {{{
 
   ## dbus_connection_pop_message {{{
   # Pop message from connection
-  #
-  # @param [Pointer, #read]  connection  A #DBusConnection
-  #
+  # @param [Pointer]  connection  A #DBusConnection
   # @return [Bool]  Whether data is available
   ##
 
@@ -408,10 +512,8 @@ class DBus # {{{
 
   ## dbus_connection_get_unix_fd {{{
   # Get dbus connection socket fd
-  #
-  # @param [Pointer, #read]   connection  A #DBusConnection
-  # @param [Pointer,  #write]  fd          Socket file descriptor
-  #
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [Pointer]  fd          Socket file descriptor
   # @return [Bool]  Whether this was successful
   ##
 
@@ -419,13 +521,20 @@ class DBus # {{{
     :dbus_connection_get_unix_fd, [ :pointer, :pointer ], :bool
   ) # }}}
 
+  ## dbus_connection_get_is_connected {{{
+  # Whether connection is currently open
+  # @param [Pointer]  connection  A #DBusConnection
+  ##
+
+  attach_function(:dbus_connection_get_is_connected,
+    :dbus_connection_get_is_connected, [ :pointer ], :bool
+  ) # }}}
+
   ## dbus_connection_send {{{
   # Adds a message to the outgoing message queue
-  #
-  # @param [Pointer, #read]   connection  A #DBusConnection
-  # @param [Pointer, #read]   message     A #DBusMessage
-  # @param [Pointer, #write]  serial      Message serial
-  #
+  # @param [Pointer]  connection  A #DBusConnection
+  # @param [Pointer]  message     A #DBusMessage
+  # @param [Pointer]  serial      Message serial
   # @return [Bool]  Whether this was successful
   ##
 
@@ -435,8 +544,7 @@ class DBus # {{{
 
   ## dbus_connection_flush {{{
   # Flush data on connection
-  #
-  # @param [Pointer, #read]  connection  A #DBusConnection
+  # @param [Pointer]  connection  A #DBusConnection
   ##
 
   attach_function(:dbus_connection_flush,
@@ -445,8 +553,7 @@ class DBus # {{{
 
   ## dbus_connection_unref {{{
   # Unreference connection
-  #
-  # @param [Pointer, #read]  connection  A #DBusConnection
+  # @param [Pointer]  connection  A #DBusConnection
   ##
 
   attach_function(:dbus_connection_unref,
@@ -455,9 +562,7 @@ class DBus # {{{
 
   ## dbus_message_new_method_return {{{
   # Construct a reply to a method call
-  #
-  # @param [Pointer, #read]  message  A #DBusMessage
-  #
+  # @param [Pointer]  message  A #DBusMessage
   # @return [Pointer] A #DbusMessage
   ##
 
@@ -467,10 +572,8 @@ class DBus # {{{
 
   ## dbus_message_iter_init {{{
   # Init message iter
-  #
-  # @param [Pointer, #read]  message  A #DBusMessage
-  # @param [Pointer, #read]  iter     A #DBusMessageIter
-  #
+  # @param [Pointer]  message  A #DBusMessage
+  # @param [Pointer]  iter     A #DBusMessageIter
   # @return [Bool]  Whether init succeeded
   ##
 
@@ -480,9 +583,8 @@ class DBus # {{{
 
   ## dbus_message_iter_init_append {{{
   # Initializes a DBusMessageIter for appending arguments
-  #
-  # @param [Pointer, #read]  message  A #DBusMessage
-  # @param [Pointer, #read]  iter     A #DBusMessageIter
+  # @param [Pointer]  message  A #DBusMessage
+  # @param [Pointer]  iter     A #DBusMessageIter
   ##
 
   attach_function(:dbus_message_iter_init_append,
@@ -491,9 +593,7 @@ class DBus # {{{
 
   ## dbus_message_iter_get_arg_type {{{
   # Get the argument type of the message iter
-  #
-  # @param [Pointer, #read]  iter  A #DBusMessageIter
-  #
+  # @param [Pointer]  iter  A #DBusMessageIter
   # @return [Fixnum] Argument type of iter
   ##
 
@@ -503,9 +603,7 @@ class DBus # {{{
 
   ## dbus_message_iter_next {{{
   # Get next iter
-  #
-  # @param [Pointer, #read]  iter  A #DBusMessageIter
-  #
+  # @param [Pointer]  iter  A #DBusMessageIter
   # @return [Bool]  Whether next succeeded
   ##
 
@@ -515,11 +613,9 @@ class DBus # {{{
 
   ## dbus_message_iter_append_basic {{{
   # Appends a basic-typed value to the message
-  #
-  # @param [Pointer, #read]  iter   A #DBusMessageIter
-  # @param [Fixnum,  #read]  type   A #DBusType
-  # @param [Pointer, #read]  value  Address of the value
-  #
+  # @param [Pointer]  iter   A #DBusMessageIter
+  # @param [Fixnum]   type   A #DBusType
+  # @param [Pointer]  value  Address of the value
   # @return [Bool] Whether append succeeded
   ##
 
@@ -529,12 +625,10 @@ class DBus # {{{
 
   ## dbus_message_iter_append_fixed_array {{{
   # Appends a block of fixed-length values to an array
-  #
-  # @param [Pointer, #read]  iter        A #DBusMessageIter
-  # @param [Fixnum,  #read]  type        A #DBusType
-  # @param [Pointer, #read]  value       Address of the array
-  # @param [Fixnum,  #read]  n_elements  Number of elements to append
-  #
+  # @param [Pointer]  iter        A #DBusMessageIter
+  # @param [Fixnum]   type        A #DBusType
+  # @param [Pointer]  value       Address of the array
+  # @param [Fixnum]   n_elements  Number of elements to append
   # @return [Bool] Whether append succeeded
   ##
 
@@ -545,10 +639,8 @@ class DBus # {{{
 
   ## dbus_message_iter_get_basic {{{
   # Get basic value from message
-  #
-  # @param [Pointer, #read]  message  A #DBusMessage
-  # @param [Pointer, #read]  value    A value
-  #
+  # @param [Pointer]  message  A #DBusMessage
+  # @param [Pointer]  value    A value
   # @return [Bool]  Whether get value succeeded
   ##
 
@@ -558,12 +650,10 @@ class DBus # {{{
 
   ## dbus_message_iter_open_container {{{
   # Appends a container-typed value to the message
-  #
-  # @param [Pointer, #read]  iter                 A #DBusMessageIter
-  # @param [Fixnum,  #read]  type                 A #DBusType
-  # @param [String,  #read]  contained_signature  Type of container contents
-  # @param [Pointer, #read]  sub                  A #DBusMessageIter
-  #
+  # @param [Pointer]  iter                 A #DBusMessageIter
+  # @param [Fixnum]   type                 A #DBusType
+  # @param [String]   contained_signature  Type of container contents
+  # @param [Pointer]  sub                  A #DBusMessageIter
   # @return [Bool] Whether get value succeeded
   ##
 
@@ -574,10 +664,8 @@ class DBus # {{{
 
   ## dbus_message_iter_close_container {{{
   # Closes a container-typed value to the message
-  #
-  # @param [Pointer, #read]  iter                 A #DBusMessageIter
-  # @param [Pointer, #read]  sub                  A #DBusMessageIter
-  #
+  # @param [Pointer]  iter A #DBusMessageIter
+  # @param [Pointer]  sub  A #DBusMessageIter
   # @return [Bool] Whether get value succeeded
   ##
 
@@ -587,11 +675,9 @@ class DBus # {{{
 
   ## dbus_message_is_method_call {{{
   # Check whether the mssage is a method call of given type
-  #
-  # @param [Pointer, #read]  message    A #DBusMessage
-  # @param [String,  #read]  interface  Interface name
-  # @param [String,  #read]  method     Method name
-  #
+  # @param [Pointer]  message    A #DBusMessage
+  # @param [String]   interface  Interface name
+  # @param [String]   method     Method name
   # @return [Bool] Whether method call is of given type
   ##
 
@@ -601,8 +687,7 @@ class DBus # {{{
 
   ## dbus_message_unref {{{
   # Unreference message
-  #
-  # @param [Pointer, #read]  message  A #DBusMessage
+  # @param [Pointer]  message  A #DBusMessage
   ##
 
   attach_function(:dbus_message_unref,
@@ -610,19 +695,18 @@ class DBus # {{{
   ) # }}}
 end # }}}
 
+# Sublet
 configure :notify do |s| # {{{
-  s.interval = 9999
-  s.messages = []
-  s.dbus     = DBus.new
+  s.dbus = DBus.new
 
-  # Colors
+  # Get colors
   colors = Subtlext::Subtle.colors
 
-  s.colors = {
-    :focus => colors[:focus_fg],
-    :text  => colors[:panel_fg],
-    :panel => colors[:panel_bg]
-  }
+  # Get config values
+  font = s.config[:font] || "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
+  fg   = Subtlext::Color.new(s.config[:foreground] || colors[:sublets_fg])
+  bg   = Subtlext::Color.new(s.config[:background] || colors[:sublets_bg])
+  s.hl = Subtlext::Color.new(s.config[:highlight]  || colors[:focus_fg])
 
   # Icon
   s.icon = Subtlext::Icon.new("info.xbm")
@@ -630,60 +714,64 @@ configure :notify do |s| # {{{
   # Window
   s.win = Subtlext::Window.new(:x => 0, :y => 0, :width => 1, :height => 1) do |w|
     w.name        = "Sublet notify"
-    w.foreground  = s.colors[:text]
-    w.background  = s.colors[:panel]
+    w.font        = font
+    w.foreground  = fg
+    w.background  = bg
     w.border_size = 0
   end
 
+  # Font metrics
+  s.font_height = s.win.font_height
+  s.font_y      = s.win.font_y
 
   # Watch socket
   s.watch(s.dbus.fd)
-end # }}}
 
-on :run do |s| # {{{
-  # Just idle
-  s.interval = 9999
-  s.data     = s.icon.to_s
+  s.data = s.icon.to_s
 end # }}}
 
 on :watch do |s| # {{{
   # Fetch messages
-  if(s.dbus.fetch)
-    s.messages << s.dbus.summary
+  s.dbus.fetch
 
-    s.data = "%s%s" % [ s.colors[:focus], s.icon ]
+  unless(s.dbus.messages.empty?)
+    s.data = "%s%s" % [ s.hl, s.icon ]
   end
 end # }}}
 
 on :mouse_over do |s| # {{{
   # Show and print messages
-  if(0 < s.messages.size)
+  unless(s.dbus.messages.empty?)
     x      = 0
     y      = 0
-    width  = 1
-    height = 5
+    width  = 0
+    height = 0
+
+    s.win.clear
 
     # Write each message and calculate window width
-    s.messages.each_index do |i|
-      size    = s.win.write(2, 15 * (i + 1), s.messages[i][0..50])
-      width   = size if(size > width) #< Get biggest
-      height += 15
+    s.dbus.messages.each_index do |i|
+      size    = s.win.write(2, height + s.font_y, s.dbus.messages[i].summary[0..50])
+      width   = size if(size > width) #< Get widest
+      height += s.font_height
     end
 
     # Orientation
-    screen_geom = Subtlext::Screen[0].geometry
+    screen_geom = s.screen.geometry
     sublet_geom = s.geometry
 
+    # X position
     if(sublet_geom.x + width > screen_geom.x + screen_geom.width)
-      x = screen_geom.x + screen_geom.width - width
+      x = screen_geom.x + screen_geom.width - width #< x + width > screen width
     else
-      x = sublet_geom.x
+      x = sublet_geom.x #< Sublet x
     end
 
+    # Y position
     if(sublet_geom.y + height > screen_geom.y + screen_geom.height)
-      y = screen_geom.y + screen_geom.height - height
+      y = screen_geom.y + screen_geom.height - height #< Bottom
     else
-      y = sublet_geom.y + sublet_geom.height + 1
+      y = sublet_geom.y + sublet_geom.height #< Top
     end
 
     s.win.geometry = [ x, y, width, height ]
@@ -694,15 +782,15 @@ end # }}}
 
 on :mouse_out do |s| # {{{
   # Hide window
-  if(0 < s.messages.size)
+  unless(s.dbus.messages.empty?)
     s.win.hide
-    s.messages = []
-    s.data     = s.icon.to_s
+    s.dbus.messages = []
+    s.data          = s.icon.to_s
   end
 end # }}}
 
-on :exit do |s| # {{{
+on :unload do |s| # {{{
   # Tidy up
   s.win.kill unless(s.win.nil?)
-  s.dbus.finalize
+  s.dbus.kill unless(s.dbus.nil?)
 end # }}}

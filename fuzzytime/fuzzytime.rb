@@ -1,11 +1,11 @@
 # Fuzzytime sublet file
 # Created with sur-0.2
-configure :fuzzytime do |s|
+configure :fuzzytime do |s| # {{{
   s.interval = 60
 
   # Locales
   s.locales  = {
-    :en => {
+    :en => { # {{{
       :numbers => [
         "one", "two", "three", "four", "five", "six",
         "seven", "eight", "nine", "ten", "eleven", "twelve"
@@ -16,8 +16,8 @@ configure :fuzzytime do |s|
         "twenty-five to %1", "twenty to %1", "quarter to %1", "ten to %1",
         "five to %1", "%1 o'clock"
       ]
-    },
-    :de => {
+    }, # }}}
+    :de => { # {{{
       :numbers => [
         "eins", "zwei", "drei", "vier", "fünf", "sechs",
         "sieben", "acht", "neun", "zehn", "elf", "zwölf"
@@ -28,8 +28,8 @@ configure :fuzzytime do |s|
         "zwanzig vor %1", "viertel vor %1", "zehn vor %1", "fünf vor %1",
         "%1 uhr"
       ]
-    },
-    :fr => {
+    }, # }}}
+    :fr => { # {{{
       :numbers => [
         "une heure", "deux heures", "trois heures", "quatre heures",
         "cinq heures", "six heures", "sept heures", "huit heures",
@@ -41,8 +41,8 @@ configure :fuzzytime do |s|
         "%1 moins vingt-cinq", "%1 moins quart", "%1 moins dix",
         "%1 moin cinq", "%1"
       ]
-    },
-    :es => {
+    }, # }}}
+    :es => { # {{{
       :numbers => [
         "uno", "dos", "tres", "cuatro", "cinco", "seis",
         "siete", "ocho", "nueve", "diez", "once", "doce"
@@ -53,7 +53,7 @@ configure :fuzzytime do |s|
         "%1 menos veinticinco", "%1 menos veinte", "%1 menos cuarto",
         "%1 menos diez", "%1 menos cinco", "%1 en punto"
       ]
-    }
+    } # }}}
   }
 
   # Select locale
@@ -65,16 +65,16 @@ configure :fuzzytime do |s|
   else
     s.locale = s.locales[:en]
   end
-end
+end # }}}
 
 on :run do |s| # {{{
   hour, minute = Time.now.strftime("%I:%M").split(":").map(&:to_i)
 
   # Assemble and replace text
-  s.data = s.locale[:text][(minute.to_f / 5).round].gsub(/(%[01]{1})/) do |str|
+  s.data = (s.locale[:text][(minute.to_f / 5).round].gsub(/(%[01]{1})/) { |str|
     case str
       when "%0" then s.locale[:numbers][hour - 1]
       when "%1" then s.locale[:numbers][(12 == hour ? 0 : hour)]
     end
-  end
+  }).capitalize
 end # }}}

@@ -4,7 +4,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Fuzzytime"
-  s.version     = "0.2"
+  s.version     = "0.3"
   s.tags        = [ "Localization" ]
   s.files       = [ "fuzzytime.rb" ]
   s.icons       = [ ]
