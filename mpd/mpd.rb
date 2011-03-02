@@ -2,7 +2,7 @@
 # Created with sur-0.1
 require "socket"
 
-# Pointer {{{
+# Class Pointer {{{
 class Pointer
   attr_accessor :value
 
@@ -15,29 +15,275 @@ class Pointer
   end
 end # }}}
 
+# Class Mpd {{{
+class Mpd
+  # Mpd state
+  attr_accessor :state
+
+  # Mpd options
+  attr_accessor :repeat
+  attr_accessor :random
+  attr_accessor :database
+
+  # Mpd socket
+  attr_accessor :socket
+
+  # Mpd current song
+  attr_accessor :current_song
+
+  ## initialize {{{
+  # Create a new mpd object
+  # @param [String]  host      Hostname
+  # @param [Fixnum]  port      Port
+  # @param [String]  password  Password
+  ##
+
+  def initialize(host, port, password = nil)
+    @host         = host
+    @port         = port
+    @password     = password
+    @socket       = nil
+    @state        = :off
+    @repeat       = false
+    @random       = false
+    @database     = false
+    @current_song = {}
+  end # }}}
+
+  ## connect {{{
+  # Open connection to mpd
+  # @return [Bool] Whether connection succeed
+  ##
+
+  def connect
+    @socket = TCPSocket.new(@host, @port)
+
+    # Handle SIGPIPE
+    trap "PIPE" do
+      @socket = nil
+      disconnect
+    end
+
+    # Wait for mpd header
+    safe_read(1)
+
+    # Send password if any
+    unless(@password.nil?)
+      safe_write("password #{@password}")
+      get_ok(1)
+    end
+
+    parse_status
+    parse_current
+    idle
+
+    true
+  end # }}}
+
+  ## disconnect {{{
+  # Send close and shutdown
+  ###
+
+  def disconnect
+    safe_write("close") unless(@socket.nil?)
+
+    @socket = nil
+    @state  = :off
+  end # }}}
+
+  ## action # {{{
+  # Send action to mpd
+  # @param [String]  command  Mpd action
+  ##
+
+  def action(command)
+    noidle
+    safe_write(command)
+  end # }}}
+
+  ## update {{{
+  # Update mpd
+  ##
+
+  def update
+    get_ok(1)
+    parse_status
+    parse_current
+    idle
+  end # }}}
+
+  private
+
+  ## safe_read {{{
+  # Read data from socket
+  # @param [Fixnum]  timeout  Timeout in seconds
+  # @return [String] Read data
+  ##
+
+  def safe_read(timeout = 0)
+    line = ""
+
+    begin
+      sets = select([ @socket ], nil, nil, timeout)
+      line = @socket.readline unless(sets.nil?) #< No nil is a socket hit
+    rescue EOFError
+      puts "mpd read: EOF"
+      disconnect
+    rescue
+      disconnect
+    end
+
+    line
+  end # }}}
+
+  ## safe_write {{{
+  # Write dats to socket
+  # @param [String]  str  String to write
+  ##
+
+  def safe_write(str)
+    return if(str.empty?)
+
+    begin
+      @socket.write("%s\n" % [ str ]) unless(@socket.nil?)
+    rescue
+      disconnect
+    end
+  end # }}}
+
+  ## idle {{{
+  # Send idle command
+  ##
+
+  def idle
+    safe_write("idle player options update") unless(@socket.nil?)
+  end # }}}
+
+  ## noidle {{{
+  # Send noidle command
+  ###
+
+  def noidle
+    safe_write("noidle")
+    get_ok(1)
+  end # }}}
+
+  ## get_ok {{{
+  # Get ok or error
+  # @param [Fixnum]  timeout  Timeout in seconds
+  # @return [Bool] Whether mpd return ok
+  ##
+
+  def get_ok(timeout = 0)
+    unless(@socket.nil?)
+      line = safe_read(timeout)
+      line = safe_read(timeout) if(line.match(/^changed/)) #< Skip changed message
+
+      # Check result
+      if(line.match(/^OK/))
+        true
+      elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
+        disconnect
+
+        # Probably non-recoverable
+        puts "mpd %s error: %s" % [ match[2], match[3] ]
+
+        raise "mpd error"
+      end
+    end
+  end # }}}
+
+  ## get_reply {{{
+  # Send command and return reply as hash
+  # @oaran [String]  command  Command to send
+  # return [Hash] Data hash
+  ###
+
+  def get_reply(command)
+    hash = {}
+
+    begin
+      safe_write(command)
+
+      while
+        line = safe_read(1)
+
+        # Check response
+        if(line.match(/^OK/))
+          break
+        elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
+          disconnect
+
+          # Probably non-recoverable
+          puts "mpd %s error: %s" % [ match[2], match[3] ]
+
+          raise "mpd error"
+        elsif((match = line.match(/^(\w+): (.+)$/)))
+          hash[match[1].downcase] = match[2]
+        end
+      end
+    rescue
+      hash = {}
+    end
+
+    hash
+  end # }}}
+
+  ## parse_status {{{
+  # Parse mpd status
+  ###
+
+  def parse_status
+    unless(@socket.nil?)
+      status = get_reply("status")
+
+      # Convert state
+      @state = case status["state"]
+        when "play"  then :play
+        when "pause" then :pause
+        when "stop"  then :stop
+        else :off
+      end
+
+      # Set modes
+      @repeat   = (0 == status["repeat"].to_i) ? false : true
+      @random   = (0 == status["random"].to_i) ? false : true
+      @database = !status["updating_db"].nil?
+    end
+  end # }}}
+
+  ## parse_current {{{
+  # Parse mpd current song
+  ##
+
+  def parse_current
+    unless(@socket.nil?)
+      @current_song = get_reply("currentsong") 
+    else
+      @current_song = {}
+    end
+  end # }}}
+end # }}}
+
 configure :mpd do |s| # {{{
   # Icons
   s.icons = {
-    :play    => Subtlext::Icon.new("play.xbm"),
-    :pause   => Subtlext::Icon.new("pause.xbm"),
-    :stop    => Subtlext::Icon.new("stop.xbm"),
-    :prev    => Subtlext::Icon.new("prev.xbm"),
-    :next    => Subtlext::Icon.new("next.xbm"),
-    :note    => Subtlext::Icon.new("note.xbm"),
-    :repeat  => Subtlext::Icon.new("repeat.xbm"),
-    :random  => Subtlext::Icon.new("shuffle.xbm"),
-    :update  => Subtlext::Icon.new("diskette.xbm")
+    :play     => Subtlext::Icon.new("play.xbm"),
+    :pause    => Subtlext::Icon.new("pause.xbm"),
+    :stop     => Subtlext::Icon.new("stop.xbm"),
+    :prev     => Subtlext::Icon.new("prev.xbm"),
+    :next     => Subtlext::Icon.new("next.xbm"),
+    :note     => Subtlext::Icon.new("note.xbm"),
+    :repeat   => Subtlext::Icon.new("repeat.xbm"),
+    :random   => Subtlext::Icon.new("shuffle.xbm"),
+    :database => Subtlext::Icon.new("diskette.xbm")
   }
 
   # Options
-  s.host          = s.config[:host]  || ENV["MPD_HOST"] || "localhost"
-  s.port          = s.config[:port]  || ENV["MPD_PORT"] || 6600
-  s.debug         = s.config[:debug] || false
-  s.def_action    = s.config[:def_action]
-  s.wheel_up      = s.config[:wheel_up]
-  s.wheel_down    = s.config[:wheel_down]
-  s.format_string = s.config[:format_string] || "%note%%artist% - %title%"
-  s.interval      = 999
+  s.def_action     = s.config[:def_action]
+  s.wheel_up       = s.config[:wheel_up]
+  s.wheel_down     = s.config[:wheel_down]
+  s.format_string  = s.config[:format_string] || "%note%%artist% - %title%"
 
   # Sanitize actions
   valid = [ "play", "pause 0", "pause 1", "stop", "previous", "next", "stop" ]
@@ -67,311 +313,92 @@ configure :mpd do |s| # {{{
     end
   end
 
-  # Modes
-  s.repeat  = false
-  s.shuffle = false
-  s.update  = false
+  # Create mpd object
+  host, password = (s.config[:host] || ENV["MPD_HOST"] || "localhost").split("@")
+  port           = s.config[:port]  || ENV["MPD_PORT"] || 6600
 
-  # Connect
-  if(s.connect(s.host, s.port))
-    idle
-    watch(self.socket) #< Start socket watching
+  s.mpd = Mpd.new(host, port, password)
+
+  if(s.mpd.connect)
+    update_status
+    watch(s.mpd.socket)
   end
 end # }}}
 
 helper do |s| # {{{
-
-  ## shutdown {{{
-  # Shutdown connection
-  ##
-
-  def shutdown
-    unwatch #< Stop watching socket
-
-    self.socket = nil
-    self.state  = :off
-
-    update_status
-  end # }}}
-
-  ## connect {{{
-  # Open connection to mpd
-  # @param [String]  host  Hostname
-  # @param [Fixnum]  port  Port
-  # @return [Bool] Whether connection succeed
-  ##
-
-  def connect(host, port)
-    begin
-      self.socket = TCPSocket.new(host, port)
-
-      # Handle SIGPIPE
-      trap "PIPE" do
-        shutdown
-        puts "mpd signal: SIGPIPE" if(self.debug)
-      end
-
-      safe_read(1) #< Wait for mpd header
-      update_status
-
-      true
-    rescue
-      update_status
-
-      false
-    end
-  end # }}}
-
-  ## disconnect {{{
-  # Send close and shutdown
-  ###
-
-  def disconnect
-    unless(self.socket.nil?)
-      safe_write("close")
-
-      shutdown
-    end
-  end # }}}
-
-  ## safe_read {{{
-  # Read data from socket
-  # @param [Fixnum]  timeout  Timeout in seconds
-  # @return [String] Read data
-  ##
-
-  def safe_read(timeout = 0)
-    line = ""
-
-    begin
-      sets = select([ self.socket ], nil, nil, timeout)
-      line = self.socket.readline unless(sets.nil?) #< No nil is a socket hit
-
-      puts "mpd read: %s" % [ line ] if(self.debug)
-    rescue EOFError
-      shutdown
-      puts "mpd read: EOF" if(self.debug)
-    rescue
-      shutdown
-    end
-
-    line
-  end # }}}
-
-  ## safe_write {{{
-  # Write dats to socket
-  # @param [String]  str  String to write
-  ##
-
-  def safe_write(str)
-    return if(str.empty?)
-
-    begin
-      self.socket.write("%s\n" % [ str ]) unless(self.socket.nil?)
-
-      puts "mpd write: %s" % [ str ] if(self.debug)
-    rescue
-      shutdown
-    end
-  end # }}}
-
-  ## idle {{{
-  # Send idle command
-  ##
-
-  def idle
-    safe_write("idle player options update")
-  end # }}}
-
-  ## noidle {{{
-  # Send noidle command
-  ###
-
-  def noidle
-    safe_write("noidle")
-  end # }}}
-
-  ## get_reply {{{
-  # Send command and return reply as hash
-  # @oaran [String]  command  Command to send
-  # return [Hash] Data hash
-  ###
-
-  def get_reply(command)
-    hash = {}
-
-    begin
-      safe_write(command)
-
-      while
-        line = safe_read(1)
-
-        # Check response
-        if(line.match(/^OK/))
-          break
-        elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
-          s.state = :error
-
-          puts "mpd error: %s" % [ match[3] ]
-
-          safe_write("clearerror")
-
-          break
-        elsif((match = line.match(/^(\w+): (.+)$/)))
-          hash[match[1].downcase] = match[2]
-        end
-      end
-    rescue
-      hash = {}
-    end
-
-    puts hash.inspect if(self.debug)
-
-    hash
-  end # }}}
-
-  ## get_status {{{
-  # Get mpd status
-  # return [Hash]  Status hash
-  ###
-
-  def get_status
-    unless(self.socket.nil?)
-      status = get_reply("status")
-
-      # Convert state
-      self.state = case status["state"]
-        when "play"  then :play
-        when "pause" then :pause
-        when "stop"  then :stop
-        else :off
-      end
-
-      # Set modes
-      self.repeat = (0 == status["repeat"].to_i) ? false : true
-      self.random = (0 == status["random"].to_i) ? false : true
-      self.update = !status["updating_db"].nil?
-
-      puts "mpd status: %s" % [ status["state"] ] if(self.debug)
-
-      status
-    end
-  end # }}}
-
-  ## get_ok {{{
-  # Get ok or error
-  # @param [Fixnum]  timeout  Timeout in seconds
-  # @return [Bool] Whether mpd return ok
-  ##
-
-  def get_ok(timeout = 0)
-    unless(self.socket.nil?)
-      line = safe_read(timeout)
-      line = safe_read(timeout) if(line.match(/^changed/)) #< Skip changed message
-
-      # Check result
-      if(line.match(/^OK/))
-        true
-      elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
-        puts "mpd error: %s" % [ match[3] ]
-
-        safe_write("clearerror")
-
-        true
-      else
-        # Probably non-recoverable
-        puts "mpd error: expected ok - got: %s" % [ line ] if(self.debug)
-
-        shutdown
-      end
-    end
-  end # }}}
-
-  ## update_status {{{
-  # Update status and set data
-  ##
-
-  def update_status
+  def update_status # {{{
     mesg  = "mpd not running"
     modes = ""
     icon  = :play
 
-    unless(self.socket.nil?)
-      get_status
-
-      if(:play == self.state or :pause == self.state)
-        song = get_reply("currentsong")
-
+    unless(self.mpd.socket.nil?)
+      if(:play == self.mpd.state or :pause == self.mpd.state)
         # Select icon
-        icon = case self.state
+        icon = case self.mpd.state
           when :play  then :pause
           when :pause then :play
         end
 
         # Sanity?
         self.format_values.each do |k, v|
-          if(song.include?(k))
-            self.format_values[k].value = song[k] || "n/a"
+          if(self.mpd.current_song.include?(k))
+            self.format_values[k].value = self.mpd.current_song[k] || "n/a"
           end
         end
 
+        # Modes
+        modes << self.icons[:repeat]   if(self.mpd.repeat)
+        modes << self.icons[:random]   if(self.mpd.random)
+        modes << self.icons[:database] if(self.mpd.database)
+        modes = " %s" % [ modes ] unless(modes.empty?)
+
         # Assemble format
         mesg = self.format_string % self.format_values.values
-      elsif(:stop == self.state)
+      elsif(:stop == self.mpd.state)
         mesg = "mpd stopped"
         icon = :play
       end
     end
 
-    # Mode
-    modes << self.icons[:repeat] if(self.repeat)
-    modes << self.icons[:random] if(self.random)
-    modes << self.icons[:update] if(self.update)
-    modes = " %s" % [ modes ] unless(modes.empty?)
-
     self.data = "%s%s%s%s%s %s" % [
-      self.icons[icon], self.icons[:stop], self.icons[:prev], self.icons[:next],
+      self.icons[icon], self.icons[:stop],
+      self.icons[:prev], self.icons[:next],
       modes, mesg
     ]
+
   end # }}}
 end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
-  if(s.socket.nil?)
-    connect(s.host, s.port)
+  if(s.mpd.socket.nil?)
+    s.mpd.connect
     update_status
-    idle
-
-    watch(self.socket)
+    watch(s.mpd.socket)
   else
-    noidle
-    get_ok(1)
-
     # Send to socket
-    safe_write(
+    s.mpd.action(
       case b
         when 1
           case x
-            when 0..14
-              case s.state
+            when 2..17
+              case s.mpd.state
                 when :stop  then "play"
                 when :pause then "pause 0"
                 when :play  then "pause 1"
               end
-            when 15..28 then "stop"
-            when 29..42 then "previous"
-            when 43..56 then "next"
+            when 18..33 then "stop"
+            when 34..49 then "previous"
+            when 50..65 then "next"
             else s.def_action
           end
-        when 4 then self.wheel_up
-        when 5 then self.wheel_down
+        when 4 then s.wheel_up
+        when 5 then s.wheel_down
       end
     )
   end
 end # }}}
 
 on :watch do |s| # {{{
-  get_ok(1)
+  s.mpd.update
   update_status
-  idle
 end # }}}

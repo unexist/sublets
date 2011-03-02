@@ -1,10 +1,29 @@
 # Mpd specification file
 # Created with sur-0.1
 Sur::Specification.new do |s|
+  # Sublet information
   s.name        = "Mpd"
-  s.authors     = [ "Christoph Kappel" ]
-  s.date        = "Tue Jan 18 15:05 CET 2011"
+  s.version     = "0.44"
+  s.tags        = [ "Socket", "Icon", "Config", "Format" ]
+  s.files       = [ "mpd.rb" ]
+  s.icons       = [
+    "icons/play.xbm",
+    "icons/pause.xbm",
+    "icons/stop.xbm",
+    "icons/prev.xbm",
+    "icons/next.xbm",
+    "icons/note.xbm",
+    "icons/repeat.xbm",
+    "icons/shuffle.xbm",
+    "icons/diskette.xbm"
+  ]
+
+  # Sublet authors
+  s.authors     = [ "unexist" ]
   s.contact     = "unexist@dorfelite.net"
+  s.date        = "Tue Jan 18 15:05 CET 2011"
+
+  # Sublet description
   s.description = "Show the current track of mpd and some controls"
   s.notes       = <<NOTES
 This sublet displays the current track playing in mpd along with control
@@ -32,6 +51,8 @@ Empty fields are just replaced by 'n/a'.
 
 [1] http://www.musicpd.org/doc/protocol/ch02.html#id555938
 NOTES
+
+  # Sublet config
   s.config      = [
     {
       :name        => "host",
@@ -44,12 +65,6 @@ NOTES
       :type        => "integer",
       :description => "Port number",
       :def_value   => "$MPD_PORT, 6600"
-    },
-    {
-      :name        => "debug",
-      :type        => "bool",
-      :description => "Show debuging messages",
-      :def_value   => "false"
     },
     {
       :name        => "def_action",
@@ -75,19 +90,5 @@ NOTES
       :description => "Output format string",
       :def_value   => "%note%%artist% - %album%"
     }
-  ]
-  s.version     = "0.42"
-  s.tags        = [ "Socket", "Icon", "Config", "Format" ]
-  s.files       = [ "mpd.rb" ]
-  s.icons       = [
-    "icons/play.xbm",
-    "icons/pause.xbm",
-    "icons/stop.xbm",
-    "icons/prev.xbm",
-    "icons/next.xbm",
-    "icons/note.xbm",
-    "icons/repeat.xbm",
-    "icons/shuffle.xbm",
-    "icons/diskette.xbm"
   ]
 end
