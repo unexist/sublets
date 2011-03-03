@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Mpd"
-  s.version     = "0.44"
+  s.version     = "0.45"
   s.tags        = [ "Socket", "Icon", "Config", "Format" ]
   s.files       = [ "mpd.rb" ]
   s.icons       = [
@@ -57,7 +57,7 @@ NOTES
     {
       :name        => "host",
       :type        => "string",
-      :description => "Hostname to connect to",
+      :description => "Hostname to connect to (host@password)",
       :def_value   => "$MPD_HOST, localhost"
     },
     {

@@ -56,28 +56,36 @@ class Mpd
   ##
 
   def connect
-    @socket = TCPSocket.new(@host, @port)
+    begin
+      @socket = TCPSocket.new(@host, @port)
 
-    # Handle SIGPIPE
-    trap "PIPE" do
-      @socket = nil
-      disconnect
+      # Handle SIGPIPE
+      trap "PIPE" do
+        @socket = nil
+        disconnect
+      end
+
+      # Wait for mpd header
+      safe_read(1)
+
+      # Send password if any
+      unless(@password.nil?)
+        safe_write("password #{@password}")
+        return false unless(get_ok(1))
+      end
+
+      parse_status
+      parse_current
+      idle
+
+      true
+    rescue Errno::ECONNREFUSED
+      puts "mpd not running"
+
+      false
+    rescue
+      false
     end
-
-    # Wait for mpd header
-    safe_read(1)
-
-    # Send password if any
-    unless(@password.nil?)
-      safe_write("password #{@password}")
-      get_ok(1)
-    end
-
-    parse_status
-    parse_current
-    idle
-
-    true
   end # }}}
 
   ## disconnect {{{
@@ -123,14 +131,16 @@ class Mpd
   def safe_read(timeout = 0)
     line = ""
 
-    begin
-      sets = select([ @socket ], nil, nil, timeout)
-      line = @socket.readline unless(sets.nil?) #< No nil is a socket hit
-    rescue EOFError
-      puts "mpd read: EOF"
-      disconnect
-    rescue
-      disconnect
+    unless(@socket.nil?)
+      begin
+        sets = select([ @socket ], nil, nil, timeout)
+        line = @socket.readline unless(sets.nil?) #< No nil is a socket hit
+      rescue EOFError
+        puts "mpd read: EOF"
+        disconnect
+      rescue
+        disconnect
+      end
     end
 
     line
@@ -144,10 +154,12 @@ class Mpd
   def safe_write(str)
     return if(str.empty?)
 
-    begin
-      @socket.write("%s\n" % [ str ]) unless(@socket.nil?)
-    rescue
-      disconnect
+    unless(@socket.nil?)
+      begin
+        @socket.write("%s\n" % [ str ])
+      rescue
+        disconnect
+      end
     end
   end # }}}
 
@@ -188,7 +200,7 @@ class Mpd
         # Probably non-recoverable
         puts "mpd %s error: %s" % [ match[2], match[3] ]
 
-        raise "mpd error"
+        false
       end
     end
   end # }}}
@@ -202,28 +214,30 @@ class Mpd
   def get_reply(command)
     hash = {}
 
-    begin
-      safe_write(command)
+    unless(@socket.nil?)
+      begin
+        safe_write(command)
 
-      while
-        line = safe_read(1)
+        while
+          line = safe_read(1)
 
-        # Check response
-        if(line.match(/^OK/))
-          break
-        elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
-          disconnect
+          # Check response
+          if(line.match(/^OK/))
+            break
+          elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
+            disconnect
 
-          # Probably non-recoverable
-          puts "mpd %s error: %s" % [ match[2], match[3] ]
+            # Probably non-recoverable
+            puts "mpd %s error: %s" % [ match[2], match[3] ]
 
-          raise "mpd error"
-        elsif((match = line.match(/^(\w+): (.+)$/)))
-          hash[match[1].downcase] = match[2]
+            raise #< Exit loop
+          elsif((match = line.match(/^(\w+): (.+)$/)))
+            hash[match[1].downcase] = match[2]
+          end
         end
+      rescue
+        hash = {}
       end
-    rescue
-      hash = {}
     end
 
     hash
@@ -319,10 +333,9 @@ configure :mpd do |s| # {{{
 
   s.mpd = Mpd.new(host, port, password)
 
-  if(s.mpd.connect)
-    update_status
-    watch(s.mpd.socket)
-  end
+  watch(s.mpd.socket) if(s.mpd.connect)
+
+  update_status
 end # }}}
 
 helper do |s| # {{{
