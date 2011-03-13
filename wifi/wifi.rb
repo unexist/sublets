@@ -3,37 +3,30 @@
 require "socket"
 
 # Copied from wireless.h
-SIOCGIWESSID      = 0x8B1B  
+SIOCGIWESSID      = 0x8B1B
 IW_ESSID_MAX_SIZE = 32
 
-configure :wifi do |s|
+configure :wifi do |s| # {{{
   s.interval = 240
-  s.icon     = Subtlext::Icon.new("wifi_01.xbm")
-  s.device   = "wlan0"
-end
+  s.icon     = Subtlext::Icon.new("wifi.xbm")
+  s.device   = s.config[:device] || "wlan0"
+end # }}}
 
-on :run do |s|
-  begin
-    # Get data
-    wireless = IO.readlines("/proc/net/wireless", "r")
+on :run do |s| # {{{
+  # Get data
+  wireless = IO.readlines("/proc/net/wireless", "r").join
 
-    device, link, level, noise = wireless.join.scan(/(\w*):\s*\d*\s*([0-9-]+).\s+([0-9-]+).\s+([0-9-]+)/).flatten
+  link, level, noise = wireless.scan(/#{s.device}:\s*\d*\s*([0-9-]+).\s+([0-9-]+).\s+([0-9-]+)/).flatten
 
-    # Get essid
-    sock = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM, 0)
+  # Get essid
+  sock = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM, 0)
 
-    templ   = "a16pI2"
-    iwessid = [ device, " " * IW_ESSID_MAX_SIZE, IW_ESSID_MAX_SIZE, 1 ].pack(templ)
+  template = "a16pI2"
+  iwessid  = [ s.device, " " * IW_ESSID_MAX_SIZE, IW_ESSID_MAX_SIZE, 1 ].pack(template)
 
-    sock.ioctl(SIOCGIWESSID, iwessid)
+  sock.ioctl(SIOCGIWESSID, iwessid)
 
-    interface, essid, len, flags = iwessid.unpack(templ)
+  interface, essid, len, flags = iwessid.unpack(template)
 
-    max = 100
-
-    s.data = "%s%s (%d/%d)" % [ s.icon, essid.strip, link, max ]
-  rescue => err # Sanitize to prevent unloading
-    s.data = "subtle"
-    p err
-  end
-end
+  s.data = "%s%s (%d/100)" % [ s.icon, essid.strip, link ]
+end # }}}
