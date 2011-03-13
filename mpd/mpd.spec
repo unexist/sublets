@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Mpd"
-  s.version     = "0.45"
+  s.version     = "0.46"
   s.tags        = [ "Socket", "Icon", "Config", "Format" ]
   s.files       = [ "mpd.rb" ]
   s.icons       = [

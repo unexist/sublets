@@ -77,15 +77,12 @@ class Mpd
       parse_status
       parse_current
       idle
-
-      true
     rescue Errno::ECONNREFUSED
       puts "mpd not running"
-
-      false
     rescue
-      false
     end
+
+    !@socket.nil?
   end # }}}
 
   ## disconnect {{{
@@ -111,6 +108,7 @@ class Mpd
 
   ## update {{{
   # Update mpd
+  # @return [Bool] Whether update was successful
   ##
 
   def update
@@ -118,6 +116,8 @@ class Mpd
     parse_status
     parse_current
     idle
+
+    !@socket.nil?
   end # }}}
 
   private
@@ -137,6 +137,7 @@ class Mpd
         line = @socket.readline unless(sets.nil?) #< No nil is a socket hit
       rescue EOFError
         puts "mpd read: EOF"
+        @socket = nil
         disconnect
       rescue
         disconnect
@@ -152,7 +153,7 @@ class Mpd
   ##
 
   def safe_write(str)
-    return if(str.empty?)
+    return if(str.nil? or str.empty?)
 
     unless(@socket.nil?)
       begin
@@ -384,9 +385,8 @@ end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
   if(s.mpd.socket.nil?)
-    s.mpd.connect
+    watch(s.mpd.socket) if(s.mpd.connect)
     update_status
-    watch(s.mpd.socket)
   else
     # Send to socket
     s.mpd.action(
@@ -412,6 +412,6 @@ on :mouse_down do |s, x, y, b| # {{{
 end # }}}
 
 on :watch do |s| # {{{
-  s.mpd.update
+  unwatch unless(s.mpd.update)
   update_status
 end # }}}
