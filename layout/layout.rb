@@ -5,6 +5,7 @@ configure :layout do |s| # {{{
 
   # Icon for modes
   s.modes = {
+    :none        => Subtlext::Icon.new("tn.xbm"),
     :gravity     => Subtlext::Icon.new("tg.xbm"),
     :vertical    => Subtlext::Icon.new("tv.xbm"),
     :horzizontal => Subtlext::Icon.new("th.xbm"),
@@ -20,7 +21,7 @@ configure :layout do |s| # {{{
   # Check and set default layout
   s.def_layout = s.config[:def_layout]
   s.def_layout.to_sym if(s.def_layout.is_a?(String))
-  s.def_layout = :gravity unless(s.modes.keys.include?(s.def_layout))
+  s.def_layout = :none unless(s.modes.keys.include?(s.def_layout))
   s.data       = s.modes[s.def_layout].to_s
 
   # Apply default layout to views
@@ -44,6 +45,40 @@ helper do |s| # {{{
 
       # Tiling now
       case self.view_mode[self.cur_view]
+        when :gravity # {{{
+          assoc = {}
+
+          # Collect gravities
+          clients.each do |c|
+            if(assoc[c.gravity.id].is_a?(Array))
+              assoc[c.gravity.id] << c
+            else
+              assoc[c.gravity.id] = [ c ]
+            end
+          end
+
+          # Tile associated windows
+          assoc.each do |k, v|
+            gravity    = Subtlext::Gravity[k]
+            x, y, w, h = gravity.geometry_for(Subtlext::Screen.current)
+            width      = w / v.size
+            fix        = w - v.size * width
+            last       = v.pop
+
+            # Set client sizes
+            v.each do |c|
+              c.geometry = [
+                x, y, width - 2 * self.border, h - 2 * self.border
+              ]
+
+              x += width
+            end
+
+            # Add size fix
+            last.geometry = [
+              x, y, width + fix - 2 * self.border, h - 2 * self.border
+            ]
+          end # }}}
         when :vertical, :horzizontal # {{{
           g    = Subtlext::Geometry.new(geometry)
           last = clients.pop
@@ -169,6 +204,19 @@ helper do |s| # {{{
 
     tile
   end # }}}
+
+  ## set_layout # {{{
+  # Set specific layout
+  # @param [Fixnum]  idx  Layout index
+  ##
+
+  def set_layout(idx)
+    # Update view mode and icon
+    self.view_mode[self.cur_view] = self.modes.keys[idx]
+    self.data = self.modes[self.view_mode[self.cur_view]].to_s
+
+    tile
+  end # }}}
 end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
@@ -200,4 +248,14 @@ end # }}}
 
 grab :LayoutPrev do |s| # {{{
   select_layout(-1)
+end # }}}
+
+# Create set layout grabs {{{
+[
+  :LayoutSetNone, :LayoutSetGravity, :LayoutSetVertical, :LayoutSetHorizontal,
+  :LayoutSetLeft, :LayoutSetRight,   :LayoutSetTop,      :LayoutSetBottom
+].each_with_index do |l, idx|
+  grab l do |s|
+    set_layout(idx)
+  end
 end # }}}
