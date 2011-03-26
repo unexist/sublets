@@ -18,15 +18,20 @@ on :run do |s| # {{{
 
   link, level, noise = wireless.scan(/#{s.device}:\s*\d*\s*([0-9-]+).\s+([0-9-]+).\s+([0-9-]+)/).flatten
 
-  # Get essid
-  sock = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM, 0)
+  # FIXME: Try to get essid, some broken(?) drivers don't allow
+  # ioctl calls of non-priv users.
+  begin
+    sock = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM, 0)
 
-  template = "a16pI2"
-  iwessid  = [ s.device, " " * IW_ESSID_MAX_SIZE, IW_ESSID_MAX_SIZE, 1 ].pack(template)
+    template = "a16pI2"
+    iwessid  = [ s.device, " " * IW_ESSID_MAX_SIZE, IW_ESSID_MAX_SIZE, 1 ].pack(template)
 
-  sock.ioctl(SIOCGIWESSID, iwessid)
+    sock.ioctl(SIOCGIWESSID, iwessid)
 
-  interface, essid, len, flags = iwessid.unpack(template)
+    interface, essid, len, flags = iwessid.unpack(template)
+  rescue
+    essid = "unknown"
+  end
 
   s.data = "%s%s (%d/100)" % [ s.icon, essid.strip, link ]
 end # }}}
