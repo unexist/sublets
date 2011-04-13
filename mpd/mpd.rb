@@ -102,6 +102,7 @@ class Mpd
   ##
 
   def action(command)
+		p "command=#{command}"
     noidle
     safe_write(command)
   end # }}}

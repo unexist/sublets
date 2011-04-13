@@ -13,7 +13,7 @@ NOTES
   s.config      = [
     { :name => "path", :type => "string", :description => "Path of the battery" }
   ]
-  s.version     = "0.6"
+  s.version     = "0.7"
   s.tags        = [ "Sys", "Icon", "Config" ]
   s.files       = [ "battery.rb" ]
   s.icons       = [

@@ -27,7 +27,7 @@ configure :battery do |s|
       full = "charge_full"
       now  = "charge_now"
     elsif(File.exist?(File.join(path, "energy_full")))
-      full = "energy_full_design"
+      full = "energy_full"
       now  = "energy_now"
     end
 

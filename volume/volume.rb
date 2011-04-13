@@ -183,7 +183,8 @@ class Mixer
 end # }}}
 
 configure :volume do |s| # {{{
-  s.interval = s.config[:interval] || 240
+  s.interval = 240
+  s.step     = s.config[:step] || 5
   s.mixer    = Mixer.new
   s.icons    = {
     :on  => Subtlext::Icon.new("spkr_01.xbm"),
@@ -191,11 +192,12 @@ configure :volume do |s| # {{{
   }
 end # }}}
 
+# Hooks
 on :mouse_down do |s, x, y, b| # {{{
   case b
     when 1 then s.mixer.toggle
-    when 4 then s.mixer.louder
-    when 5 then s.mixer.quieter
+    when 4 then s.mixer.louder(s.step)
+    when 5 then s.mixer.quieter(s.step)
   end
 
   s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
@@ -203,6 +205,25 @@ end # }}}
 
 on :run do |s| # {{{
   s.mixer.get_volume
+
+  s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
+end # }}}
+
+# Grabs
+grab :VolumeRaise do |s| # {{{
+  s.mixer.louder(s.step)
+
+  s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
+end # }}}
+
+grab :VolumeLower do |s| # {{{
+  s.mixer.quieter(s.step)
+
+  s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
+end # }}}
+
+grab :VolumeToggle do |s| # {{{
+  s.mixer.toggle
 
   s.data = "%s%s" % [ s.icons[s.mixer.state], s.mixer.icon ]
 end # }}}

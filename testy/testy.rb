@@ -2,6 +2,7 @@
 # Created with sur-0.2
 configure :testy do |s|
   s.interval = 60
+  1 + a
 end
 
 HOOKS = [
@@ -26,7 +27,8 @@ EVENTS = [
   :watch,
   :mouse_down,
   :mouse_over,
-  :mouse_out
+  :mouse_out,
+  :unload
 ]
 
 (EVENTS | HOOKS).each do |h|
