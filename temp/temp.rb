@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Temp sublet file
 # Created with sur-0.1
 
@@ -15,10 +16,20 @@ class Hwmon # {{{
     @path      = path
     @cur_temp  = 0
 
-    # Read name
-    @name = read_value(File.join(path, "name"))
+    base = path
 
-    @path = File.join(path, "temp1_input")
+    @path = File.join(base, "temp1_input")
+    if(!File.exist?(@path))
+      base = File.join(base, "device/")
+    end
+    @path = File.join(base, "temp1_input")
+
+    # Read name
+    name_file = File.join(base, "temp1_label")
+    if(!File.exist?(name_file))
+      name_file = File.join(base, "name")
+    end
+    @name = read_value(name_file)
   end # }}}
 
   ## update {{{
@@ -34,7 +45,7 @@ class Hwmon # {{{
 
   ## to_s {{{
   # Convert data to string for given scale
-  # @param  [String]  scale      Temperatur scale
+  # @param  [String]  scale      Temperature scale
   # @param  [Bool]    show_name  Show monitor name
   # @return [String] Formatted string
   ##
@@ -52,7 +63,7 @@ class Hwmon # {{{
 
     # Assemble string
     if(show_name)
-      "%s %1.f°%s" % [ @name, degree, scale ]
+      "%s: %1.f°%s" % [ @name, degree, scale ]
     else
       "%1.f°%s" % [ degree, scale ]
     end
@@ -80,6 +91,7 @@ configure :temp do |s| # {{{
   # Config
   s.scale     = s.config[:scale] || "C"
   s.show_name = s.config[:show_name].nil? ? true : s.config[:show_name]
+  s.separator = s.config[:separator] || " "
   monitors    = s.config[:monitors] || []
 
   # Sanitize data
@@ -133,7 +145,7 @@ on :run do |s| # {{{
       data << mon.to_s(s.scale, s.show_name)
     end
 
-    s.data = "%s%s" % [ s.icon, data.join(" ") ]
+    s.data = "%s%s" % [ s.icon, data.join(separator) ]
   rescue => err # Sanitize to prevent unloading
     s.data = "subtle"
     p err, err.backtrace

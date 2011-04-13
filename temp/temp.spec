@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Temp"
-  s.version     = "0.33"
+  s.version     = "0.34"
   s.tags        = [ "Sys", "Icon", "Config" ]
   s.files       = [ "temp.rb" ]
   s.icons       = [ "icons/temp.xbm" ]
@@ -29,7 +29,7 @@ NOTES
     {
       :name        => "scale",
       :type        => "string",
-      :description => "Temperatur scale (scales: K, F, R, D, N, C)",
+      :description => "Temperature scale (scales: K, F, R, D, N, C)",
       :def_value   => "C"
     },
     {
@@ -43,6 +43,12 @@ NOTES
       :type        => "string/array",
       :description => "Comma separated list or array of monitors",
       :def_value   => ""
+    },
+    {
+      :name        => "separator",
+      :type        => "string",
+      :description => "Separator to put between each temperature",
+      :def_value   => " "
     }
   ]
 
