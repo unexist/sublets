@@ -4,7 +4,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Uptime"
-  s.version     = "0.0"
+  s.version     = "0.1"
   s.tags        = [ "Proc" ]
   s.files       = [ "uptime.rb" ]
   s.icons       = [ "icons/off.xbm" ]

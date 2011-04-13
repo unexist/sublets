@@ -25,9 +25,9 @@ on :run do |s|
 
     # Output
     if(0 < days)
-      s.data = "%s%d days,  %d:%d" % [ s.icon, days, hours, minutes ]
+      s.data = "%s%d days,  %d:%02d" % [ s.icon, days, hours, minutes ]
     elsif(0 < hours)
-      s.data = "%s%d:%d" % [ s.icon, hours, minutes ]
+      s.data = "%s%d:%02d" % [ s.icon, hours, minutes ]
     else
       s.data = "%s%d minutes" % [ s.icon, minutes ]
     end
