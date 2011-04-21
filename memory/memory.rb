@@ -2,6 +2,7 @@
 # Created with sur-0.1
 configure :memory do |s|
   s.interval = 30
+  s.icon     = Subtlext::Icon.new("memory.xbm")
 end
 
 on :run do |s|
@@ -21,7 +22,7 @@ on :run do |s|
     used    = (total - (free + buffers + cached)) / 1024
     total   = total / 1024
 
-    s.data = used.to_s + "/" + total.to_s
+    s.data = s.icon + used.to_s + "/" + total.to_s
   rescue => err # Sanitize to prevent unloading
     s.data = "subtle"
     p err
