@@ -62,7 +62,7 @@ on :run do |s|
       else                  :unknown
     end
 
-    s.data = "%d%%%s" % [ percent, s.icons[icon] ]
+    s.data = "%s%d%%" % [ s.icons[icon], percent ]
   rescue => err # Sanitize to prevent unloading
     s.data = "subtle"
     p err
