@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Temp"
-  s.version     = "0.34"
+  s.version     = "0.35"
   s.tags        = [ "Sys", "Icon", "Config" ]
   s.files       = [ "temp.rb" ]
   s.icons       = [ "icons/temp.xbm" ]

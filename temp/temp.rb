@@ -96,7 +96,7 @@ configure :temp do |s| # {{{
 
   # Sanitize data
   if(monitors.is_a?(String))
-    monitors = monitors.delete(" ").split(",")
+    monitors = monitors.split(",")
   end
 
   if(s.scale.is_a?(String))
