@@ -3,15 +3,15 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Wifi"
-  s.version     = "0.6"
+  s.version     = "0.7"
   s.tags        = [ "Socket", "Proc", "Icon", "Config" ]
   s.files       = [ "wifi.rb" ]
   s.icons       = [ "icons/wifi.xbm" ]
 
   # Sublet authors
-  s.authors     = [ "unexist" ]
-  s.contact     = "unexist@dorfelite.net"
-  s.date        = "Thu Mar 26 15:57 CET 2011"
+  s.authors     = [ "Christoph Kappel" ]
+  s.contact     = "chkappel@gmail.com"
+  s.date        = "Mon Jul 18 20:21 CET 2011"
 
   # Sublet description
   s.description = "Show the link quality of a wifi device"

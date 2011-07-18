@@ -33,5 +33,5 @@ on :run do |s| # {{{
     essid = "unknown"
   end
 
-  s.data = "%s%s (%d/100)" % [ s.icon, essid.strip, link ]
+  s.data = "%s%s (%d/100)" % [ s.icon, essid.strip, link.nil? ? 0 : link ]
 end # }}}
