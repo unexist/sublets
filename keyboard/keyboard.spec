@@ -4,7 +4,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Keyboard"
-  s.version     = "0.0"
+  s.version     = "0.1"
   s.tags        = [ "Icon", "Config", "Virtual" ]
   s.files       = [ "keyboard.rb" ]
   s.icons       = [ "icons/ab.xbm" ]
@@ -43,6 +43,36 @@ NOTES
       :type        => "integer",
       :description => "Height of the keyboard",
       :def_value   => "200"
+    },
+    {
+      :name        => "button_fg",
+      :type        => "string",
+      :description => "Foreground color of buttons",
+      :def_value   => "#000000"
+    },
+    {
+      :name        => "button_bg",
+      :type        => "string",
+      :description => "Background color of buttons",
+      :def_value   => "#ffffff"
+    },
+    {
+      :name        => "button_shadow",
+      :type        => "string",
+      :description => "Shadow color of buttons",
+      :def_value   => "#a8a8a8"
+    },
+    {
+      :name        => "button_alt",
+      :type        => "string",
+      :description => "Alternate color of buttons (Shift)",
+      :def_value   => "#cdcdcd"
+    },
+    {
+      :name        => "background",
+      :type        => "string",
+      :description => "Background color of the window",
+      :def_value   => "#d0d0d0"
     }
   ]
 

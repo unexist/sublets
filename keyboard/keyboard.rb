@@ -68,17 +68,17 @@ class Keyboard < Subtlext::Window
     @key_height = geometry[:height] / @map[@mode].size
 
     # Colors
-    @button_bevel = colors[:button_bevel] || Subtlext::Color.new("#a8a8a8")
-    @button_fg    = colors[:button_fg]    || Subtlext::Color.new("#000000")
-    @button_bg    = colors[:button_bg]    || Subtlext::Color.new("#ffffff")
-    @button_alt   = colors[:button_alt]   || Subtlext::Color.new("#d0d0d0")
+    @button_shadow = colors[:button_shadow]
+    @button_fg     = colors[:button_fg]
+    @button_bg     = colors[:button_bg]
+    @button_alt    = colors[:button_alt]
 
     super(geometry)
 
     # Config
     self.name         = "Keyboard"
-    self.foreground   = colors[:fg]     || Subtlext::Color.new("#cdcdcd")
-    self.background   = colors[:bg]     || Subtlext::Color.new("#d0d0d0")
+    self.foreground   = colors[:background]
+    self.background   = colors[:background]
     self.border_size  = 0
 
     # Add event handler
@@ -212,7 +212,7 @@ class Keyboard < Subtlext::Window
 
   def draw_key(x, y, w, h, key, alt = false)
     # Draw drop shadow, key and text
-    draw_rect(x + 4, y + 4, w - 6, h - 6, @button_bevel, true)
+    draw_rect(x + 4, y + 4, w - 6, h - 6, @button_shadow, true)
     draw_rect(x + 3, y + 3, w - 6, h - 6, alt ? @button_shift : @button_bg, true)
     draw_text(x + w / 4, y + h / 2, key, @button_fg)
   end # }}}
@@ -229,7 +229,18 @@ configure :keyboard do |s| # {{{
   height = s.config[:height] || 200
   layout = s.config[:layout].to_sym rescue :qwertz
 
-  s.keyboard = Keyboard.new(:qwertz, { x: 0, y: geom.height - height, width: width, height: height })
+  # Colors
+  colors = {}
+  colors[:button_fg]     = Subtlext::Color.new((s.config[:button_fg]     || "#b8b8b8"))
+  colors[:button_bg]     = Subtlext::Color.new((s.config[:button_bg]     || "#757575"))
+  colors[:button_alt]    = Subtlext::Color.new((s.config[:button_alt]    || "#3d3d3d"))
+  colors[:button_shadow] = Subtlext::Color.new((s.config[:button_shadow] || "#b8b8b8"))
+  colors[:background]    = Subtlext::Color.new((s.config[:background]    || "#202020"))
+
+  s.keyboard = Keyboard.new(:qwertz,
+    { x: 0, y: geom.height - height, width: width, height: height },
+    colors
+  )
 end # }}}
 
 on :mouse_down do |s| # {{{
