@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Tasks"
-  s.version     = "0.34"
+  s.version     = "0.36"
   s.tags        = [ "Mouse", "Config" ]
   s.files       = [ "tasks.rb" ]
   s.icons       = [ ]

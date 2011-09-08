@@ -8,7 +8,7 @@ configure :tasks do |s| # {{{
   colors = Subtlext::Subtle.colors
   s.colors = {
     :active    => Subtlext::Color.new(s.config[:color_active]    || colors[:focus_fg]),
-    :inactive  => Subtlext::Color.new(s.config[:color_inactive]  || colors[:views_fg]),
+    :inactive  => Subtlext::Color.new(s.config[:color_inactive]  || colors[:views_fg] || colors[:view_fg]), #< FIXME: Accidently renamed the fields
     :separator => Subtlext::Color.new(s.config[:color_separator] || colors[:sublets_fg])
   }
 
@@ -68,6 +68,6 @@ on :mouse_down do |s, x, y, b| # {{{
      # Stupid position check
      buttonsize = s.geometry.width / s.clients.size
      button     = (x / buttonsize).round
-     s.clients[button].focus
+     s.clients[button].raise
   end
 end # }}}
