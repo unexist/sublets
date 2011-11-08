@@ -4,24 +4,17 @@ class Chart < Subtlext::Icon # {{{
 
   ## initialize {{{
   # Initialize chart
-  # @param [String]           dev     Device name
-  # @param [Subtlext::Color]  rx      Color for rx
-  # @param [Subtlext::Color]  tx      Color for tx
-  # @param [Subtlext::Color]  bg      Color for background
-  # @param [Fixnum]           width   Chart width
-  # @param [Fixnum]           height  Chart height
+  # @param [String]  dev     Device name
+  # @param [Fixnum]  width   Chart width
+  # @param [Fixnum]  height  Chart height
   ##
 
-  def initialize(dev, rx, tx, bg, width = 50, height = 10)
+  def initialize(dev, rx, tx, width = 50, height = 10)
     super(width, height, true)
 
     @dev     = dev
     @limit   = 1000
     @last    = 0
-
-    @col_rx  = rx
-    @col_tx  = tx
-    @col_bg  = bg
 
     @data_rx = []
     @data_tx = []
@@ -60,23 +53,27 @@ class Chart < Subtlext::Icon # {{{
 
   ## render {{{
   # Render chart
+  # @param  [Subtlext::Color]  rx  Received data color
+  # @param  [Subtlext::Color]  tx  Transmitted data color
+  # @param  [Subtlext::Color]  bg  Background color
+  ##
 
-  def render
+  def render(rx, tx, bg)
     clear
-    draw_rect(0, 0, @width, @height, true, @col_bg)
-    draw_bar(@data_rx, @col_rx)
-    draw_bar(@data_tx, @col_tx)
+    draw_rect(0, 0, @width, @height, true, bg)
+    draw_bar(@data_rx, rx, bg)
+    draw_bar(@data_tx, tx, bg)
   end # }}}
 
   private
 
-  def draw_bar(ary, col) # {{{
+  def draw_bar(ary, fg, bg) # {{{
     i = 0
 
     ((@width - (ary.size * 2))..@width).step(2) do |x|
       if(i < ary.size)
-        draw_point(x, @height - ary[i], col, @panel)
-        draw_point(x + 1, @height - ary[i], col, @panel)
+        draw_point(x, @height - ary[i], fg, bg)
+        draw_point(x + 1, @height - ary[i], fg, bg)
       end
 
       i += 1
@@ -101,8 +98,9 @@ configure :netchart do |s| # {{{
   s.interval = s.config[:interval] || 30
   s.title    = s.config[:title].nil? ? "" : "%s " % [ s.config[:title] ]
   s.colors   = {
-    :rx => Subtlext::Color.new(s.config[:rx_color] || colors[:focus_fg]),
-    :tx => Subtlext::Color.new(s.config[:tx_color] || colors[:views_fg])
+    :rx    => Subtlext::Color.new(s.config[:rx_color] || colors[:focus_fg]),
+    :tx    => Subtlext::Color.new(s.config[:tx_color] || colors[:views_fg]),
+    :panel => Subtlext::Color.new(s.config[:bg_color] || colors[:panel_top])
   }
 
   # Icons
@@ -114,17 +112,13 @@ configure :netchart do |s| # {{{
   # Chart
   s.chart = Chart.new(
     s.config[:device] || "eth0",
-    s.colors[:rx],
-    s.colors[:tx],
-    Subtlext::Color.new(s.config[:bg_color] || colors[:panel]),
-    s.config[:width] || 50,
-    s.config[:height] || 10
+    s.config[:width] || 50, s.config[:height] || 10
   )
 end # }}}
 
 on :run do |s| # {{{
   s.chart.update
-  s.chart.render
+  s.chart.render(s.colors[:rx], s.colors[:tx], s.colors[:panel])
 
   self.data = "%s%s%s%s%s%s" % [
     s.title, s.colors[:rx], s.icons[:rx], s.chart,

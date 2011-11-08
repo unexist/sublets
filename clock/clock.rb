@@ -9,3 +9,7 @@ end # }}}
 on :run do |s| # {{{
   s.data = s.icon + Time.now().strftime(s.format)
 end # }}}
+
+on :mouse_down do |s|
+  p s.geometry
+end

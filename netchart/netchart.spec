@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name        = "Netchart"
-  s.version     = "0.3"
+  s.version     = "0.4"
   s.tags        = [ "Icon", "Chart", "Config" ]
   s.files       = [ "netchart.rb" ]
   s.icons       = [

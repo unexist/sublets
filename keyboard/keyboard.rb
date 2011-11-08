@@ -235,7 +235,7 @@ configure :keyboard do |s| # {{{
   colors[:button_bg]     = Subtlext::Color.new((s.config[:button_bg]     || "#757575"))
   colors[:button_alt]    = Subtlext::Color.new((s.config[:button_alt]    || "#3d3d3d"))
   colors[:button_shadow] = Subtlext::Color.new((s.config[:button_shadow] || "#b8b8b8"))
-  colors[:background]    = Subtlext::Color.new((s.config[:background]    || "#202020"))
+  colors[:background]    = Subtlext::Color.new((s.config[:background]    || "#d0d0d0"))
 
   s.keyboard = Keyboard.new(:qwertz,
     { x: 0, y: geom.height - height, width: width, height: height },
