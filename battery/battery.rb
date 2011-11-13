@@ -1,13 +1,80 @@
 # Battery sublet file
 # Created with sur-0.1
-configure :battery do |s| # {{{
-  s.interval = 60
-  s.full     = 0
-  s.color    = ""
 
-  # Path
-  s.now      = ""
-  s.status   = ""
+class Battery
+  attr_accessor :path_now, :path_state, :name_now, :name_state
+  attr_accessor :uevent, :now, :state, :full, :percent
+
+  ## initialize
+  # Initialize instance
+  # @param  [String]  path  Basepath of battery
+  ##
+
+  def initialize(path)
+    # Use uevent file
+    if File.exist?(File.join(path, "uevent"))
+      @path_now = File.join(path, "uevent")
+      @uevent   = true
+
+      # Get full capacity
+      values = file2hash(path_now)
+
+      [ "POWER_SUPPLY_CHARGE_FULL",
+          "POWER_SUPPLY_ENERGY_FULL" ].each do |name|
+        if values.has_key?(name)
+          @full     = values[name].to_i
+          @name_now = name.gsub("FULL", "NOW")
+        end
+      end
+
+    # Use other files
+    else
+      if File.exist?(File.join(path, "charge_full"))
+        @path_now = File.join(path, "charge_now")
+        full      = "charge_full"
+      elsif File.exist?(File.join(path, "energy_full"))
+        @path_now = File.join(path, "energy_now")
+        full      = "energy_full"
+      end
+
+      # Finally get full capacity
+      @full = IO.readlines(File.join(path, full)).first.to_i
+
+      # Set state file
+      @path_state = File.join(path, "state")
+    end
+  end
+
+  ## text2hash
+  # Read content and convert to hash
+  # @param  [String]  path  Basepath of battery
+  ##
+
+  def text2hash(path)
+    lines = IO.readlines(path)
+
+    hash = if @uevent
+      Hash[*lines.split(/[\n=]/).flatten]
+    else
+      { nil => lines }
+    end
+  end
+
+  ## update
+  # Update battery
+  ##
+
+  def update
+    @now     = text2hash(@path_now)
+    @state   = text2hash(@path_state)
+    @percent = (now * 100 / s.full).to_i
+  end
+end
+
+configure :battery do |s| # {{{
+  s.interval  = 60
+  s.color     = ""
+  s.batteries = []
 
   # Icons
   s.icons = {
@@ -24,7 +91,7 @@ configure :battery do |s| # {{{
   s.color_def  = Subtlext::Subtle.colors[:sublets_fg]
 
   # Collect colors
-  if(s.config[:colors].is_a?(Hash))
+  if s.config[:colors].is_a?(Hash)
     s.colors = {}
 
     s.config[:colors].each do |k, v|
@@ -35,37 +102,19 @@ configure :battery do |s| # {{{
     s.color_keys = s.colors.keys.sort.reverse
   end
 
-  # Find battery slot and capacity
+  # Find batteries
   begin
-    path = s.config[:path] || Dir["/sys/class/power_supply/B*"].first
-    now  = ""
-    full = ""
-
-    if(File.exist?(File.join(path, "charge_full")))
-      full = "charge_full"
-      now  = "charge_now"
-    elsif(File.exist?(File.join(path, "energy_full")))
-      full = "energy_full"
-      now  = "energy_now"
+    ([ s.config[:path] ] || Dir["/sys/class/power_supply/B*"]).each do |path|
+      s.batteries = Batter.new(path)
     end
-
-    # Assemble paths
-    s.now    = File.join(path, now)
-    s.status = File.join(path, "status")
-
-    # Get full capacity
-    s.full = IO.readlines(File.join(path, full)).first.to_i
   rescue => err
-    puts err, err.backtrace
-    raise "Could't find any battery"
+    p err, err.backtrace
   end
 end # }}}
 
-on :run do |s| # {{{
-  begin
-    now     = IO.readlines(s.now).first.to_i
-    state   = IO.readlines(s.status).first.chop
-    percent = (now * 100 / s.full).to_i
+on :run  do |s| # {{{
+  s.batteries.each do |b|
+    begin
 
     # Select color
     unless(s.colors.nil?)
