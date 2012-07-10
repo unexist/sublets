@@ -3,7 +3,7 @@
 Sur::Specification.new do |s|
   # Sublet information
   s.name             = "Notify"
-  s.version          = "0.44"
+  s.version          = "0.45"
   s.tags             = [ "FFI", "DBus", "Icon", "Window", "Config" ]
   s.files            = [ "notify.rb" ]
   s.icons            = [ "icons/info.xbm" ]
@@ -23,8 +23,8 @@ NOTES
 
   # Sublet authors
   s.authors          = [ "unexist" ]
-  s.contact          = "unexist@dorfelite.net"
-  s.date             = "Fri Sep 17 14:12 CET 2010"
+  s.contact          = "unexist@subforge.org"
+  s.date             = "Tue Jul 10 17:20 CET 2012"
 
   # Sublet config
   s.config           = [
@@ -55,6 +55,6 @@ NOTES
   ]
 
   # Sublet requirements
-  s.required_version = "0.9.2127"
+  s.required_version = "0.10.3205"
   s.add_dependency("ffi", ">=0.5.4")
 end
