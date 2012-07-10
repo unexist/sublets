@@ -59,7 +59,7 @@ class Mpd
   def connect
     begin
       # Check socket type
-      if(File.socket?(@host))
+      if File.socket?(@host)
         @socket = UNIXSocket.new(@host)
       else
         @socket = TCPSocket.new(@host, @port)
@@ -75,9 +75,9 @@ class Mpd
       safe_read(1)
 
       # Send password if any
-      unless(@password.nil?)
+      unless @password.nil?
         safe_write("password #{@password}")
-        return false unless(get_ok(1))
+        return false unless get_ok(1)
       end
 
       parse_status
@@ -137,7 +137,7 @@ class Mpd
   def safe_read(timeout = 0)
     line = ""
 
-    unless(@socket.nil?)
+    unless @socket.nil?
       begin
         sets = select([ @socket ], nil, nil, timeout)
         line = @socket.readline unless(sets.nil?) #< No nil is a socket hit
@@ -159,9 +159,9 @@ class Mpd
   ##
 
   def safe_write(str)
-    return if(str.nil? or str.empty?)
+    return if str.nil? or str.empty?
 
-    unless(@socket.nil?)
+    unless @socket.nil?
       begin
         @socket.write("%s\n" % [ str ])
       rescue
@@ -194,14 +194,14 @@ class Mpd
   ##
 
   def get_ok(timeout = 0)
-    unless(@socket.nil?)
+    unless @socket.nil?
       line = safe_read(timeout)
       line = safe_read(timeout) if(line.match(/^changed/)) #< Skip changed message
 
       # Check result
-      if(line.match(/^OK/))
+      if line.match(/^OK/)
         true
-      elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
+      elsif (match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/))
         disconnect
 
         # Probably non-recoverable
@@ -221,7 +221,7 @@ class Mpd
   def get_reply(command)
     hash = {}
 
-    unless(@socket.nil?)
+    unless @socket.nil?
       begin
         safe_write(command)
 
@@ -229,16 +229,16 @@ class Mpd
           line = safe_read(1)
 
           # Check response
-          if(line.match(/^OK/))
+          if line.match(/^OK/)
             break
-          elsif((match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/)))
+          elsif (match = line.match(/^ACK \[(.*)\] \{(.*)\} (.*)/))
             disconnect
 
             # Probably non-recoverable
             puts "mpd %s error: %s" % [ match[2], match[3] ]
 
             raise #< Exit loop
-          elsif((match = line.match(/^(\w+): (.+)$/)))
+          elsif (match = line.match(/^(\w+): (.+)$/))
             hash[match[1].downcase] = match[2]
           end
         end
@@ -255,7 +255,7 @@ class Mpd
   ###
 
   def parse_status
-    unless(@socket.nil?)
+    unless @socket.nil?
       status = get_reply("status")
 
       # Convert state
@@ -278,7 +278,7 @@ class Mpd
   ##
 
   def parse_current
-    unless(@socket.nil?)
+    unless @socket.nil?
       @current_song = get_reply("currentsong")
     else
       @current_song = {}
@@ -313,7 +313,7 @@ configure :mpd do |s| # {{{
   s.show_pause       = s.config[:show_pause].nil? ? true : s.config[:show_pause]
 
   # Colors
-  if(s.config[:show_colors])
+  if s.config[:show_colors]
     s.colors = {
       :note  => "#ffffff", :artist => "#757575",
       :album => "#757575", :title  => "#757575",
@@ -331,9 +331,9 @@ configure :mpd do |s| # {{{
   # Sanitize actions
   valid = [ "play", "pause 0", "pause 1", "toggle", "stop", "previous", "next" ]
 
-  s.def_action = "toggle"   unless(valid.include?(s.def_action))
-  s.wheel_up   = "next"     unless(valid.include?(s.wheel_up))
-  s.wheel_down = "previous" unless(valid.include?(s.wheel_down))
+  s.def_action = "toggle"   unless valid.include?(s.def_action)
+  s.wheel_up   = "next"     unless valid.include?(s.wheel_up)
+  s.wheel_down = "previous" unless valid.include?(s.wheel_down)
 
   # Parse format string once
   fields = [ "note", "artist", "album", "title", "track", "id" ]
@@ -352,8 +352,8 @@ configure :mpd do |s| # {{{
     end
 
     # Add fields
-    if(fields.include?(field))
-      if("note" == field)
+    if fields.include?(field)
+      if "note" == field
         s.format_values[field] = self.icons[:note]
       else
         s.format_values[field] = Pointer.new
@@ -371,7 +371,7 @@ configure :mpd do |s| # {{{
 
   s.mpd = Mpd.new(host, port, password)
 
-  watch(s.mpd.socket) if(s.mpd.connect)
+  watch(s.mpd.socket) if s.mpd.connect
 
   update_status
 end # }}}
@@ -380,12 +380,12 @@ helper do |s| # {{{
   def current_song # {{{
     # Replace empty values by blank text
     self.format_values.each do |k, v|
-      if(self.mpd.current_song.has_key?(k))
+      if self.mpd.current_song.has_key?(k)
         v.value = (self.mpd.current_song[k].nil? or
           self.mpd.current_song[k].empty? ? self.blank_text :
             self.mpd.current_song[k])
       # Set field to blank text
-      elsif(v.is_a?(Pointer) and !k.end_with?("_color"))
+      elsif v.is_a?(Pointer) and !k.end_with?("_color")
         v.value = self.blank_text
       end
     end
@@ -399,15 +399,15 @@ helper do |s| # {{{
     icon  = :play
     modes = ""
 
-    unless(self.mpd.socket.nil?)
+    unless self.mpd.socket.nil?
       # Modes
-      modes << self.icons[:repeat]   if(self.mpd.repeat)
-      modes << self.icons[:random]   if(self.mpd.random)
-      modes << self.icons[:database] if(self.mpd.database)
-      modes = " %s" % [ modes ] unless(modes.empty?)
+      modes << self.icons[:repeat]   if self.mpd.repeat
+      modes << self.icons[:random]   if self.mpd.random
+      modes << self.icons[:database] if self.mpd.database
+      modes = " %s" % [ modes ] unless modes.empty?
 
       # Assemble data based on state
-      case(self.mpd.state)
+      case self.mpd.state
         when :play
           mesg = current_song
           icon = :pause
@@ -426,7 +426,7 @@ helper do |s| # {{{
     end
 
     # Add some icons
-    if(self.show_icons)
+    if self.show_icons
       mesg = "%s%s%s%s%s %s" % [
         self.icons[icon], self.icons[:stop],
         self.icons[:prev], self.icons[:next],
@@ -438,7 +438,7 @@ helper do |s| # {{{
   end # }}}
 
   def toggle_state(force = false) # {{{
-    if(force or "toggle" == self.def_action)
+    if force or "toggle" == self.def_action
       case self.mpd.state
         when :stop  then "play"
         when :pause then "pause 0"
@@ -451,7 +451,7 @@ helper do |s| # {{{
 
   def send_action(action) # {{{
     # Reconnect if necessary
-    if(self.mpd.socket.nil?)
+    if self.mpd.socket.nil?
       watch(self.mpd.socket) if(self.mpd.connect)
       update_status
     else
@@ -462,7 +462,7 @@ end # }}}
 
 on :mouse_down do |s, x, y, b| # {{{
   # Handle clicks based on x coord and state
-  if(s.show_icons)
+  if s.show_icons
     action = case b
       when 1
         case x
@@ -488,7 +488,7 @@ on :mouse_down do |s, x, y, b| # {{{
 end # }}}
 
 on :watch do |s| # {{{
-  unwatch unless(s.mpd.update)
+  unwatch unless s.mpd.update
   update_status
 end # }}}
 

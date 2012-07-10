@@ -19,7 +19,7 @@ class Bar
     @icon  = Subtlext::Icon.new(width, height)
   end # }}}
 
-  ## set_values
+  ## set_values # {{{
   # Update bar values
   # @param [Fixnum]  total    Total value
   # @param [Fixnum]  current  Current value
@@ -33,7 +33,7 @@ class Bar
     @icon.clear
     @icon.draw_rect(0, 0, @icon.width - 1, @icon.height - 1, false)
     @icon.draw_rect(3, 3, width, @icon.height - 6, true) if(0 < width)
-  end
+  end # }}}
 
   ## to_s {{{
   # Convert to string
@@ -73,6 +73,21 @@ configure :membar do |s| # {{{
     w.foreground  = fg
     w.background  = bg
     w.border_size = 0
+  end
+
+  s.win.on :draw do
+    width  = 0
+    height = 0
+
+    # Add bars
+    s.bars.each do |name, bar|
+      next if(:mem == name)
+
+      height += 14
+      width   = s.win.write(7, height, bar.to_s)
+    end
+    height += 6
+    width  += 10
   end
 end # }}}
 
