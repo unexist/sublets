@@ -1,0 +1,7 @@
+sublets
+-------
+Applets for the subtle window manager
+
+Links
+-----
+https://subtle.de
