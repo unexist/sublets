@@ -5,7 +5,7 @@ Sur::Specification.new do |s|
   s.name        = "Testy"
   s.authors     = [ "unexist" ]
   s.date        = "Mon Sep 27 22:07 CEST 2010"
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.description = "Simple event and hook tester"
   s.notes       = <<NOTES
 This sublet registers to all possible events/hooks and

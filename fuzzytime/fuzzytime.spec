@@ -23,7 +23,7 @@ NOTES
 
   # Sublet authors
   s.authors     = [ "unexist" ]
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.date        = "Mon Feb 07 13:03 CET 2011"
 
   # Sublet config

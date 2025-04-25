@@ -4,7 +4,7 @@ Sur::Specification.new do |s|
   s.name        = "Clock"
   s.authors     = [ "Christoph Kappel" ]
   s.date        = "Sat Sep 13 19:00 CET 2008"
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.description = "Show the clock and date"
   s.notes       = <<NOTES
 This sublet is just a simple clock.

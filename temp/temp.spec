@@ -10,7 +10,7 @@ Sur::Specification.new do |s|
 
   # Sublet authors
   s.authors     = [ "unexist" ]
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.date        = "Wed Mar 23 22:51 CET 2011"
 
   # Sublet description

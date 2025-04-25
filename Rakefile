@@ -1,6 +1,6 @@
 #
 # @file Rake build file
-# @copyright (c) 20010 Christoph Kappel <unexist@dorfelite.net>
+# @copyright (c) 2010-present Christoph Kappel <christoph@unexist.dev>
 # @version $Id$
 #
 # This program can be distributed under the terms of the GNU GPL.

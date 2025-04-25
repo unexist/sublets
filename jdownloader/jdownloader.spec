@@ -5,7 +5,7 @@ Sur::Specification.new do |s|
   s.name        = "Jdownloader"
   s.authors     = [ "unexist" ]
   s.date        = "Sat Sep 25 23:05 CEST 2010"
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.description = "Show infos about jDownloader"
   s.notes       = <<NOTES
 This sublet uses the Remote Control[1] extension of jDownloader[2] to provide

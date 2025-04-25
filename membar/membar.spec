@@ -5,7 +5,7 @@ Sur::Specification.new do |s|
   s.name             = "Membar"
   s.authors          = [ "unexist" ]
   s.date             = "Mon Dec 20 20:57 CET 2010"
-  s.contact          = "unexist@dorfelite.net"
+  s.contact          = "christoph@unexist.dev"
   s.description      = "Display memory usage"
   s.notes            = <<NOTES
 This sublet provides information about the used system memory via a kind of

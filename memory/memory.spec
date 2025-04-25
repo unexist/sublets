@@ -11,7 +11,7 @@ Sur::Specification.new do |s|
   # Sublet authors
   s.authors     = [ "Christoph Kappel" ]
   s.date        = "Thu Apr 21 14:10 CET 2011"
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
 
   # Sublet description
   s.description = "Show the memory usage"

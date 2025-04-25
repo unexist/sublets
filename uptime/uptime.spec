@@ -18,6 +18,6 @@ NOTES
 
   # Sublet authors
   s.authors     = [ "unexist" ]
-  s.contact     = "unexist@dorfelite.net"
+  s.contact     = "christoph@unexist.dev"
   s.date        = "Wed Apr 13 19:20 CEST 2011"
 end
